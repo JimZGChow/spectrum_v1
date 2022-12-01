@@ -231,7 +231,7 @@ public:
 
         lcdNumber_5 = new QLCDNumber(dockWidgetContents);
         lcdNumber_5->setObjectName(QString::fromUtf8("lcdNumber_5"));
-        lcdNumber_5->setStyleSheet(QString::fromUtf8("background-color: rgb(85, 87, 83);"));
+        lcdNumber_5->setStyleSheet(QString::fromUtf8("background-color: rgb(136, 138, 133);"));
         lcdNumber_5->setDigitCount(1);
         lcdNumber_5->setProperty("value", QVariant(5.000000000000000));
 
@@ -239,14 +239,14 @@ public:
 
         lcdNumber_4 = new QLCDNumber(dockWidgetContents);
         lcdNumber_4->setObjectName(QString::fromUtf8("lcdNumber_4"));
-        lcdNumber_4->setStyleSheet(QString::fromUtf8("background-color: rgb(85, 87, 83);"));
+        lcdNumber_4->setStyleSheet(QString::fromUtf8("background-color: rgb(136, 138, 133);"));
         lcdNumber_4->setDigitCount(1);
 
         horizontalLayout_2->addWidget(lcdNumber_4);
 
         lcdNumber_3 = new QLCDNumber(dockWidgetContents);
         lcdNumber_3->setObjectName(QString::fromUtf8("lcdNumber_3"));
-        lcdNumber_3->setStyleSheet(QString::fromUtf8("background-color: rgb(85, 87, 83);"));
+        lcdNumber_3->setStyleSheet(QString::fromUtf8("background-color: rgb(136, 138, 133);"));
         lcdNumber_3->setDigitCount(1);
 
         horizontalLayout_2->addWidget(lcdNumber_3);

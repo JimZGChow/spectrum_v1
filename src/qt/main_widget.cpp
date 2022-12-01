@@ -10,6 +10,7 @@
 
 main_widget::main_widget(QWidget *parent) :
         QWidget(parent),
+        _spectrum_buff(new DataBuffer<double>(BUFFSIZE)),
         ui(new Ui::main_Widget){
     ui->setupUi(this);
     ui->spinBox_end->setValue(102);
@@ -17,19 +18,40 @@ main_widget::main_widget(QWidget *parent) :
     ui->dateTimeEdit->setDateTime(QDateTime::currentDateTime());
     ui->dockWidget->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
     /* draw plot setup */
+
     this->spectrum_draw_init();
 
+    this -> _isrunning = false;
+    this -> _spectrum_process = new spectrumProcess(ui->spectrum_plot, _spectrum_buff,
+                                            1e6, 1);
     connect(ui->spinBox_span, SIGNAL(valueChanged(int)),
             this, SLOT(span_change(int)));
     connect(ui->spinBox_start, SIGNAL(valueChanged(int)),
             this, SLOT(start_change(int)));
     connect(ui->spinBox_end, SIGNAL(valueChanged(int)),
             this, SLOT(end_change(int)));
+    connect(ui->pushButton,SIGNAL(clicked()),
+            this,SLOT(click()));
+    connect(this,SIGNAL(click_status(bool)),
+            this->_spectrum_process,SLOT(clicked_status(bool)));
 
 }
 
 main_widget::~main_widget() {
     delete ui;
+    delete _spectrum_buff;
+}
+
+void main_widget::click() {
+    if(! this->_isrunning){
+        this->_isrunning = true;
+        ui->pushButton -> setStyleSheet(QString::fromUtf8("background-color: rgb(0, 164, 0);"));
+    }
+    else{
+        this->_isrunning = false;
+        ui->pushButton -> setStyleSheet(QString::fromUtf8("background-color: rgb(164, 0, 0)"));
+    }
+    emit(click_status(this->_isrunning));
 }
 
 /**
@@ -140,4 +162,7 @@ void main_widget::spectrum_draw_init() {
     ui->spectrum_plot->graph(6)->setLineStyle(QCPGraph::lsNone);
     ui->spectrum_plot->graph(6)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDot,2));
     ui->spectrum_plot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
+
 }
+
+

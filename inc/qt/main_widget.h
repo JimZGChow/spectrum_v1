@@ -7,9 +7,10 @@
 
 #include <QWidget>
 #include "ui_main_widget.h"
+#include "fix/dataBuffer.h"
+#include "draw/draw.h"
 
-
-
+#define BUFFSIZE 1*1024
 QT_BEGIN_NAMESPACE
 namespace Ui { class main_widget; }
 QT_END_NAMESPACE
@@ -26,11 +27,18 @@ public slots:
     void span_change(int);
     void start_change(int);
     void end_change(int);
+    void click();
+signals:
+    void click_status(bool);
 
 protected:
 
 private:
     Ui::main_Widget *ui;
+    DataBuffer<double> *_spectrum_buff;
+    spectrumProcess *_spectrum_process;
+
+    bool _isrunning;
 
 private:
     void spectrum_draw_init();
