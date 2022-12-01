@@ -14,14 +14,19 @@ find_package(Qt5 COMPONENTS
         Core
         Gui
         Widgets
+        PrintSupport
         REQUIRED)
 
-add_executable(spectrum main.cpp src/qt/main_widget.cpp inc/qt/main_widget.h inc/qt/main_widget.ui
-        inc/qt/center_frequency.h
-        inc/qt/ui_control_option.h src/qt/center_frequency.cpp)
+add_executable(spectrum main.cpp src/qt/main_widget.cpp
+        src/qt/qcustomplot.cpp
+        inc/qt/main_widget.h inc/qt/main_widget.ui
+        inc/fix/my_math.h inc/qt/qcustomplot.h
+        )
+
 target_link_libraries(spectrum
         Qt5::Core
         Qt5::Gui
         Qt5::Widgets
+        Qt5::PrintSupport
         )
 

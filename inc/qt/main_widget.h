@@ -7,7 +7,7 @@
 
 #include <QWidget>
 #include "ui_main_widget.h"
-#include "qt/center_frequency.h"
+
 
 
 QT_BEGIN_NAMESPACE
@@ -22,9 +22,18 @@ public:
 
     ~main_widget() override;
 
+public slots:
+    void span_change(int);
+    void start_change(int);
+    void end_change(int);
+
+protected:
+
 private:
     Ui::main_Widget *ui;
-    center_frequency *cf_ui;
+
+private:
+    void spectrum_draw_init();
 };
 
 
