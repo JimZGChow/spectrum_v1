@@ -22,8 +22,7 @@ main_widget::main_widget(QWidget *parent) :
     this->spectrum_draw_init();
 
     this -> _isrunning = false;
-    this -> _spectrum_process = new spectrumProcess(ui->spectrum_plot, _spectrum_buff,
-                                            1e6, 1);
+    this -> _spectrum_process = new spectrumProcess(ui->spectrum_plot);
     connect(ui->spinBox_span, SIGNAL(valueChanged(int)),
             this, SLOT(span_change(int)));
     connect(ui->spinBox_start, SIGNAL(valueChanged(int)),

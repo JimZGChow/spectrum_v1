@@ -24,7 +24,8 @@ add_executable(spectrum main.cpp src/qt/main_widget.cpp
         inc/draw/draw.h inc/fix/dataBuffer.h
         inc/fix/fftw_common.h src/draw/draw.cpp
         inc/fix/source_creator.h src/fix/source_creator.cpp
-        inc/device/sdrDevice.h inc/fix/log.h)
+        inc/device/sdrDevice.h inc/fix/log.h src/device/sdrDevice.cpp
+        src/fix/log.cpp)
 
 target_link_libraries(spectrum
         Qt5::Core
@@ -32,5 +33,8 @@ target_link_libraries(spectrum
         Qt5::Widgets
         Qt5::PrintSupport
         libfftw3.a
+        pthread
+        iio
+        ad9361
         )
 

@@ -9,16 +9,16 @@
 #include "fix/dataBuffer.h"
 #include "fix/fftw_common.h"
 #include "fix/source_creator.h"
-
+#include "device/sdrDevice.h"
 
 
 /* spectrum scope */
 class SpectrumScope : public QThread{
 public:
-    SpectrumScope(QCustomPlot *customPlot);
-    ~SpectrumScope();
+    explicit SpectrumScope(QCustomPlot *customPlot);
+    ~SpectrumScope() override;
 
-    void display(QVector<double> x_axe,QVector<double> y_axe);
+    void display(QVector<double> x_axis, QVector<double> y_axis);
 
 private:
     QCustomPlot *_fft_scope;
@@ -29,8 +29,7 @@ private:
 class spectrumProcess : public QThread{
     Q_OBJECT
 public:
-    spectrumProcess(QCustomPlot *custcomPlot, DataBuffer<double> *buffer_data,
-                    double input_sample_rate, double average_count);
+    explicit spectrumProcess(QCustomPlot *custcomPlot);
     ~spectrumProcess() override;
 
     void run() override;
@@ -40,14 +39,16 @@ private:
     DataBuffer<double> *_buffer_data;
     common_fft *_spectrum_fft;
     double _sample_rate;
-    int _sample_count;
-    double _average_cout;
+
 
     DSPCOMPLEX *_spectrumBuffer_fft;
     SINCOS *_cos10k;
 
     bool _is_running;
 
+    /* device */
+    std::shared_ptr<mp::sdrDevice> _device;
+    static void get_rx_data(mp::sdr_transfer *transfer);
 public slots:
     void clicked_status(bool);
 };
