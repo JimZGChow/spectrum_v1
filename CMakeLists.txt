@@ -10,6 +10,7 @@ set(CMAKE_PREFIX_PATH "/opt/pkg/qt/5.12.8/gcc_64/lib/cmake")
 
 include_directories(${PROJECT_SOURCE_DIR}/inc)
 
+link_directories(${PROJECT_SOURCE_DIR}/lib)
 find_package(Qt5 COMPONENTS
         Core
         Gui
@@ -32,7 +33,7 @@ target_link_libraries(spectrum
         Qt5::Gui
         Qt5::Widgets
         Qt5::PrintSupport
-        libfftw3.a
+        fftw3f
         pthread
         iio
         ad9361

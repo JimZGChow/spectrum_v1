@@ -83,6 +83,8 @@ public:
     QWidget *add;
     QTabWidget *tabWidget_2;
     QWidget *small_show_widget;
+    QGridLayout *gridLayout_3;
+    QCustomPlot *plot_1M;
 
     void setupUi(QWidget *main_Widget)
     {
@@ -431,6 +433,14 @@ public:
         tabWidget_2->setMinimumSize(QSize(0, 300));
         small_show_widget = new QWidget();
         small_show_widget->setObjectName(QString::fromUtf8("small_show_widget"));
+        gridLayout_3 = new QGridLayout(small_show_widget);
+        gridLayout_3->setObjectName(QString::fromUtf8("gridLayout_3"));
+        plot_1M = new QCustomPlot(small_show_widget);
+        plot_1M->setObjectName(QString::fromUtf8("plot_1M"));
+        plot_1M->setStyleSheet(QString::fromUtf8("background-color: rgb(136, 138, 133);"));
+
+        gridLayout_3->addWidget(plot_1M, 0, 0, 1, 1);
+
         tabWidget_2->addTab(small_show_widget, QString());
         splitter_2->addWidget(tabWidget_2);
         splitter_3->addWidget(splitter_2);

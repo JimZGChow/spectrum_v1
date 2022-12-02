@@ -37,7 +37,7 @@ namespace mp{
         static sdr_sptr make_sdrDevice(const std::string& driver_type,
                                        const std::string& ip);
 
-        virtual void sdr_open() = 0;
+        virtual bool sdr_open() = 0;
         virtual void sdr_close() = 0;
         virtual bool sdr_check(int channel) = 0;
         virtual void sdr_set_gain(double gain, int channel) = 0;

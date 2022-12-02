@@ -10,22 +10,21 @@
 #include "cstring"
 #include "complex"
 
-typedef fftw_complex DSPCOMPLEX;
-
+typedef fftwf_complex DSPCOMPLEX;
 class common_fft{
 public:
     common_fft(int32_t size);
     ~common_fft(void);
 
-    fftw_complex *getVector(void);
+    DSPCOMPLEX *getVector(void);
     void do_FFT(void);
 //    void do_IFFT(void);
     void do_Shift(void);
-    fftw_complex *resetVecotr(int32_t size);
+    DSPCOMPLEX *resetVecotr(int32_t size);
 
 private:
-    fftw_complex *_vector;
-    fftw_plan _plan;
+    DSPCOMPLEX *_vector;
+    fftwf_plan _plan;
     int32_t _fft_size;
 };
 

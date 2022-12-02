@@ -20,9 +20,10 @@ main_widget::main_widget(QWidget *parent) :
     /* draw plot setup */
 
     this->spectrum_draw_init();
+    this->spectrum_1M_draw_init();
 
     this -> _isrunning = false;
-    this -> _spectrum_process = new spectrumProcess(ui->spectrum_plot);
+    this -> _spectrum_process = new spectrumProcess(ui->spectrum_plot, ui->plot_1M);
     connect(ui->spinBox_span, SIGNAL(valueChanged(int)),
             this, SLOT(span_change(int)));
     connect(ui->spinBox_start, SIGNAL(valueChanged(int)),
@@ -33,7 +34,8 @@ main_widget::main_widget(QWidget *parent) :
             this,SLOT(click()));
     connect(this,SIGNAL(click_status(bool)),
             this->_spectrum_process,SLOT(clicked_status(bool)));
-
+    connect(this->_spectrum_process,SIGNAL(is_run(bool)),
+            this,SLOT(is_running(bool)));
 }
 
 main_widget::~main_widget() {
@@ -44,13 +46,21 @@ main_widget::~main_widget() {
 void main_widget::click() {
     if(! this->_isrunning){
         this->_isrunning = true;
-        ui->pushButton -> setStyleSheet(QString::fromUtf8("background-color: rgb(0, 164, 0);"));
     }
     else{
         this->_isrunning = false;
-        ui->pushButton -> setStyleSheet(QString::fromUtf8("background-color: rgb(164, 0, 0)"));
     }
     emit(click_status(this->_isrunning));
+}
+
+void main_widget::is_running(bool is_run) {
+    this->_isrunning = is_run;
+    if(is_run){
+        ui->pushButton -> setStyleSheet(QString::fromUtf8("background-color: rgb(0, 164, 0);"));
+    }
+    else{
+        ui->pushButton -> setStyleSheet(QString::fromUtf8("background-color: rgb(164, 0, 0)"));
+    }
 }
 
 /**
@@ -161,7 +171,83 @@ void main_widget::spectrum_draw_init() {
     ui->spectrum_plot->graph(6)->setLineStyle(QCPGraph::lsNone);
     ui->spectrum_plot->graph(6)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDot,2));
     ui->spectrum_plot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
-
 }
+
+void main_widget::spectrum_1M_draw_init() {
+    QPen pen = ui->plot_1M->xAxis->basePen();
+    pen.setColor(Qt::white);
+    /* back ground */
+    ui->plot_1M->setBackground(QColor(85, 87, 83));
+    /* x y label */
+    ui->plot_1M->xAxis->setLabelColor(Qt::white);
+    ui->plot_1M->yAxis->setLabelColor(Qt::white);
+    ui->plot_1M->xAxis->setTickLabelColor(Qt::white);
+    ui->plot_1M->yAxis->setTickLabelColor(Qt::white);
+
+    /* set tick pen */
+    ui->plot_1M->xAxis->setTickPen(pen);
+    ui->plot_1M->xAxis->setBasePen(pen);
+    ui->plot_1M->xAxis->setSubTickPen(pen);
+    ui->plot_1M->yAxis->setTickPen(pen);
+    ui->plot_1M->yAxis->setBasePen(pen);
+    ui->plot_1M->yAxis->setSubTickPen(pen);
+
+    /* set attr */
+    ui->plot_1M->xAxis->setVisible(true);
+    ui->plot_1M->xAxis->setTickLabels(true);
+    ui->plot_1M->yAxis->setVisible(true);
+    ui->plot_1M->yAxis->setTickLabels(true);
+    ui->plot_1M->xAxis->setLabel("Freqency (MHz)");
+    ui->plot_1M->yAxis->setLabel("dBm (1000mv)");
+    ui->plot_1M->yAxis->setRange(-30,70,Qt::AlignCenter);
+    ui->plot_1M->xAxis->setRange(70,130,Qt::AlignCenter);
+
+    /* set graph */
+    QPen draw_pen(Qt::white);
+    draw_pen.setWidth(4);
+
+    ui->plot_1M->addGraph();
+    ui->plot_1M->graph()->setPen(QPen(Qt::yellow));
+    ui->plot_1M->addGraph();
+    ui->plot_1M->graph(1)->setPen(QPen(Qt::red));
+    ui->plot_1M->addGraph();
+    ui->plot_1M->graph(2)->setPen(draw_pen);
+    ui->plot_1M->graph(2)->setLineStyle(QCPGraph::lsNone);
+    ui->plot_1M->graph(2)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDot,2));
+
+    /* set curson */
+    draw_pen.setColor(QColor(239, 41, 41));
+    draw_pen.setWidth(4);
+    ui->plot_1M->addGraph();
+    ui->plot_1M->graph(3)->setPen(draw_pen);
+    ui->plot_1M->graph(3)->setLineStyle(QCPGraph::lsNone);
+    ui->plot_1M->graph(3)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDot,2));
+
+    draw_pen.setColor(QColor(252, 175, 62));
+    draw_pen.setWidth(4);
+    ui->plot_1M->addGraph();
+    ui->plot_1M->graph(4)->setPen(draw_pen);
+    ui->plot_1M->graph(4)->setLineStyle(QCPGraph::lsNone);
+    ui->plot_1M->graph(4)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDot,2));
+
+    draw_pen.setColor(QColor(252, 233, 79));
+    draw_pen.setWidth(5);
+    ui->plot_1M->addGraph();
+    ui->plot_1M->graph(5)->setPen(draw_pen);
+    ui->plot_1M->graph(5)->setLineStyle(QCPGraph::lsNone);
+    ui->plot_1M->graph(5)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDot,2));
+
+    draw_pen.setColor(QColor(173, 127, 168));
+    draw_pen.setWidth(5);
+    ui->plot_1M->addGraph();
+    ui->plot_1M->graph(6)->setPen(draw_pen);
+    ui->plot_1M->graph(6)->setLineStyle(QCPGraph::lsNone);
+    ui->plot_1M->graph(6)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDot,2));
+    ui->plot_1M->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
+}
+
+
+
+
 
 

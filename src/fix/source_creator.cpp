@@ -10,7 +10,7 @@ SINCOS::SINCOS(std::string type, double fs, uint32_t sample_count, double freque
     this->_sample_count = sample_count;
     this->_frequency = frequency;
 
-    _data_source = (DSPCOMPLEX*) fftw_malloc( sizeof(DSPCOMPLEX) * _sample_count);
+    _data_source = (DSPCOMPLEX*) fftwf_malloc( sizeof(DSPCOMPLEX) * _sample_count);
 
     if(this->_type == "SIN"){
         for(uint32_t i = 0;i <= _sample_count ;i++){

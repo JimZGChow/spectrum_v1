@@ -28,6 +28,7 @@ public slots:
     void start_change(int);
     void end_change(int);
     void click();
+    void is_running(bool);
 signals:
     void click_status(bool);
 
@@ -42,6 +43,7 @@ private:
 
 private:
     void spectrum_draw_init();
+    void spectrum_1M_draw_init();
 };
 
 

@@ -3,94 +3,218 @@
 //
 #include "draw/draw.h"
 
+#define DATABUFF_SIZE 100*1024
 
-spectrumProcess::spectrumProcess(QCustomPlot *custcomPlot) {
-    this->_spectrum_draw = new SpectrumScope(custcomPlot);
-//    this->_buffer_data = buffer_data;
-    this->_sample_rate = 1e6;
-//    this->_average_cout = average_count;
+QMutex lock;
+spectrumProcess::spectrumProcess(QCustomPlot *custcomPlot, QCustomPlot *small_plot_1M) {
+    this->_RF_sample_rate = 2.5e6;
+    this->_RF_band_width  = 2.0e6;
+    this->_RF_frequency   = 100.5e6;
+
+    _buffer_data    = new DataBuffer<float>(DATABUFF_SIZE);
+    _spectrum_draw  = new SpectrumScope(custcomPlot, small_plot_1M, _buffer_data, 1024,
+                                        _RF_frequency, _RF_sample_rate, _RF_band_width);
+    _spectrum_fft   = new common_fft(1024);
+    _log            = new mp::log();
+    _iq_data        = fftwf_alloc_complex(sizeof(DSPCOMPLEX) * 1024);
+
+    this->_spectrumBuffer_fft = _spectrum_fft->getVector();
     this->_is_running = false;
+    connect(this, SIGNAL(buffer_data_load()),
+            this->_spectrum_draw, SLOT(buffer_data_loaded()));
 
-
-    _buffer_data = new DataBuffer<double>(10*1024);
-    _spectrum_fft = new common_fft(1024);
-    _spectrumBuffer_fft = _spectrum_fft->getVector();
-
-    _cos10k = new SINCOS("COS", _sample_rate, 1024, 100e3);
-//    _cos10k->save_source_file("cos2e3.txt");
 }
 
 spectrumProcess::~spectrumProcess() {
-    free(_spectrum_draw);
+    delete _buffer_data;
+    delete _spectrum_draw;
+    delete _spectrum_fft;
+    delete _log;
+    fftwf_free(_iq_data);
 }
 
 void spectrumProcess::run() {
-    _device = mp::sdrDevice::make_sdrDevice("iio","ip:192.168.1.10");
-    _device->sdr_open();
-    _device->sdr_set_rx_samplecnt(1024); /* sample cnt */
-    _device->sdr_set_bandwidth(1e6,0);
-    _device->sdr_set_samplerate(2.2e6,0);
-    _device->sdr_set_lo_frequency(100.5e6);
-    _device->sdr_start_rx(spectrumProcess::get_rx_data, this);
-//    DSPCOMPLEX *dataBuffer;
-//    dataBuffer =  _cos10k->get_source_ptr();
-//    uint32_t set_size = _buffer_data->put_data_into_buffer((void*)dataBuffer,2 * _cos10k->get_source_size());
-//
-//    uint32_t get_size = _buffer_data->get_data_from_buffer(_spectrumBuffer_fft,2 * _cos10k->get_source_size());
-//    if(get_size != 0){
-//        _spectrum_fft->do_FFT();
-//        _spectrum_fft->do_Shift();
-//
-//        QVector<double> x_fft(1024);
-//        for(int i = 0;i<x_fft.size();i++){
-//            x_fft[i] = _sample_rate / 1024 * i - _sample_rate / 2;
-//        }
-//        QVector<double> y_fft(1024);
-//        for(int i = 0;i<y_fft.size();i++){
-//            double M = sqrt(_spectrumBuffer_fft[i][0]*_spectrumBuffer_fft[i][0] + _spectrumBuffer_fft[i][1]*_spectrumBuffer_fft[i][1]);
-//            double A = 2 * M / 1024;
-//            y_fft[i] = 20 * log10(A / 1e3);
-//        }
-//        _spectrum_draw->display(x_fft,y_fft);
-//
-//    }
+    try {
 
+        _is_running = true;
+        _buffer_data->flash_data_buffer();
+        _device->sdr_check(0);
+        _device->sdr_set_bandwidth(_RF_band_width,0);
+        _device->sdr_set_samplerate(_RF_sample_rate,0);
+        _device->sdr_set_lo_frequency(_RF_frequency);
+        _device->sdr_set_rx_samplecnt(1024); /* sample cnt */
+        _device->sdr_start_rx(spectrumProcess::get_rx_data, this);
 
-    while(_is_running){
-        usleep(50);
+        while(_is_running){
+            usleep(10);
+        }
+
     }
-    _device->sdr_close();
+    catch (...){
+        this->_log->ERROR("Spectrum Process failed");
+    }
+
 }
 
 void spectrumProcess::clicked_status(bool is_on) {
+    lock.lock();
+
     this->_is_running = is_on;
-    if(_is_running){
-        this->start();
+
+    if(is_on){
+        _device = mp::sdrDevice::make_sdrDevice("iio","ip:192.168.1.10");
+        if(_device->sdr_open()){
+            emit is_run(true);
+            _spectrum_draw->start();
+            this->start();
+
+        }
+        else{
+            emit is_run(false);
+        }
+
     }
+    else{
+        _device->sdr_close();
+        _spectrum_draw->run_scope_drawing(is_on);
+        emit is_run(false);
+    }
+    lock.unlock();
+
 }
 
 void spectrumProcess::get_rx_data(mp::sdr_transfer *transfer) {
-    std::cout << transfer->length << endl;
-//    auto *obj = (spectrumProcess *)transfer->user;
+    auto *obj = (spectrumProcess *)transfer->user;
+    try {
 
+        for(int i = 0;i < transfer->length;i++){
+            obj->_iq_data[i][0] = transfer->data[2*i];
+            obj->_iq_data[i][1] = transfer->data[2*i+1];
+        }
+        auto load_size = obj->_buffer_data->put_data_into_buffer(obj->_iq_data,2 * transfer->length);
+        if(load_size == transfer->length * 2){
+            emit obj->buffer_data_load();
+        }
+    }
+    catch (...){
+        obj->_log->ERROR("get_rx_data Failed ...");
+    }
 
 }
 
+SpectrumScope::SpectrumScope(QCustomPlot *customPlot, QCustomPlot *small_plot, DataBuffer<float> *scope_buffer,
+                             int samples,
+                             double frequency, double fs, double bandwidth) {
+    this->_fft_scope    = customPlot;
+    this->_fft_1Mscope  = small_plot;
+    this->_scope_buffer = scope_buffer;
+    this->_show_size    = samples;
+    this->_is_drawing   = true;
+    this->_fs           = fs;
+    this->_freq         = frequency;
+    this->_bandwidth    = bandwidth;
 
-SpectrumScope::SpectrumScope(QCustomPlot *customPlot) {
-    this->_fft_scope = customPlot;
+    _spectrum_fft = new common_fft(samples);
+    _doFFT_buffer = new DataBuffer<float>(DATABUFF_SIZE);
+    _log          = new mp::log();
+    _draw         = fftwf_alloc_complex(sizeof(DSPCOMPLEX) * _show_size);
+
+    _spectrum_data_buffer_fft = _spectrum_fft ->getVector();
+
 }
-
-void SpectrumScope::display(QVector<double> x_axis, QVector<double> y_axis) {
-    this->_fft_scope->graph(0)->setData(x_axis, y_axis);
-    this->_fft_scope->xAxis->rescale();
-//    this->_fft_scope->graph(0)->rescaleAxes();
-    this->_fft_scope->replot(QCustomPlot::rpQueuedReplot);
-}
-
 
 SpectrumScope::~SpectrumScope() {
+    delete _spectrum_fft;
+    delete _doFFT_buffer;
+    delete _log;
+    fftwf_free(_draw);
+}
+
+void SpectrumScope::display(const QVector<double> &x_axis, const QVector<double> &y_axis, bool is_small) {
+    if(not is_small){
+        this->_fft_scope->graph(0)->setData(x_axis, y_axis);
+        this->_fft_scope->xAxis->rescale();
+        this->_fft_scope->replot(QCustomPlot::rpQueuedReplot);
+    }
+    else{
+        this->_fft_1Mscope->graph(0)->setData(x_axis, y_axis);
+        this->_fft_1Mscope->xAxis->rescale();
+        this->_fft_1Mscope->replot(QCustomPlot::rpQueuedReplot);
+    }
+}
+
+void SpectrumScope::buffer_data_loaded() {
+    if(_scope_buffer->get_data_buffer_read_available() > 0){
+        uint32_t get_data = _scope_buffer->get_data_from_buffer(_spectrum_data_buffer_fft,2 * _show_size);
+        if(get_data != _show_size * 2){
+            qDebug() << "buffer_loaded "<<get_data;
+            return;
+        }
+        else if(_doFFT_buffer->get_data_buffer_write_available() > 0){
+            _spectrum_fft->do_FFT();
+            _spectrum_fft->do_Shift();
+            _doFFT_buffer->put_data_into_buffer(_spectrum_data_buffer_fft,2 * _show_size);
+        }
+    }
+}
+
+void SpectrumScope::run() {
+    try {
+        _doFFT_buffer->flash_data_buffer();
+        _is_drawing = true;
+        while(_is_drawing){
+            if(_doFFT_buffer->get_data_buffer_read_available() > 0){
+                uint32_t read_size = _doFFT_buffer->get_data_from_buffer(_draw,2 * _show_size);
+                if(read_size == 2 * _show_size){
+                    QVector<double> x_fft(_show_size);
+                    for(int i = 0; i < _show_size;i++){
+                        x_fft[i] = ((_freq - _fs / 2) + (_fs / 1024 * i)) / 1e6;
+                    }
+                    QVector<double> y_fft(_show_size);
+                    for(int i = 0; i < _show_size;i++){
+                        double M = sqrt(_draw[i][0]*_draw[i][0] + _draw[i][1]*_draw[i][1]);
+                        double A = 2 * M / 1024;
+                        y_fft[i] = 20 * log10(A / 1e3);
+                    }
+                    this->display(x_fft, y_fft, false);
+
+                    /* just draw 1M */
+                    double step = _fs / 1024;
+                    int draw_number = (int)(1e6 / step);
+                    draw_number = (draw_number % 2 == 1) ?  draw_number + 1 : draw_number;
+                    QVector<double> x1_fft(draw_number);
+                    for(int i = 0,j = ((_show_size / 2) - (draw_number/2)); i < draw_number;i++,j++){
+                        x1_fft[i] = ((_freq - _fs / 2) + (_fs / 1024 * j)) / 1e6;
+                    }
+                    QVector<double> y1_fft(draw_number);
+                    for(int i = 0,j = ((_show_size / 2) - (draw_number/2)); i < draw_number;i++,j++){
+                        double M = sqrt(_draw[j][0]*_draw[j][0] + _draw[j][1]*_draw[j][1]);
+                        double A = 2 * M / 1024;
+                        y1_fft[i] = 20 * log10(A / 1e3);
+                    }
+                    this->display(x1_fft,y1_fft,true);
+                }
+            }
+            msleep(80);
+        }
+    }
+    catch (...){
+        this->_log->ERROR("Spectrum scope failed ...");
+    }
+}
+
+void SpectrumScope::run_scope_drawing(bool options) {
+    this->_is_drawing = options;
+
 
 }
+
+void SpectrumScope::set_sdr_info(double fs, double frequency, double bandwidth) {
+    this->_fs = fs;
+    this->_freq = frequency;
+    this->_bandwidth = bandwidth;
+
+}
+
 
 

@@ -526,6 +526,15 @@ color: rgb(238, 238, 236);</string>
         <attribute name="title">
          <string>1M Show</string>
         </attribute>
+        <layout class="QGridLayout" name="gridLayout_3">
+         <item row="0" column="0">
+          <widget class="QCustomPlot" name="plot_1M" native="true">
+           <property name="styleSheet">
+            <string notr="true">background-color: rgb(136, 138, 133);</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </widget>
       </widget>
      </widget>

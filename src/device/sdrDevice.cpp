@@ -20,6 +20,7 @@ using namespace mp;
 
 sdrDevice::~sdrDevice() {
     /* NOP */
+
 }
 
 #ifdef IIO
@@ -45,17 +46,19 @@ public:
         if(_rx_buf) iio_buffer_destroy(_rx_buf);
         if(_ctx) iio_context_destroy(_ctx);
     }
-    void sdr_open() override{
+    bool sdr_open() override{
         std::string info("Find device with ");
         info += _device;
         _log.INFO("iio device open ...");
         if (this->connect_device(_device)){
             info += string(" Succed ...");
             _log.INFO(info);
+            return true;
         }
         else{
             info += string(" Failed ...");
             _log.WARNING(info);
+            return false;
         }
     }
     void sdr_close() override{
@@ -65,6 +68,7 @@ public:
             iio_context_destroy(_ctx);
             _ctx = nullptr;
         }
+        _log.DEBUG("close end ...");
     }
     void sdr_set_samplerate(double sample_rate, int channel) override{
         this->set_ad9361_fs_hz(RX,channel,(long long)sample_rate);
@@ -117,8 +121,10 @@ public:
         }
     }
     void sdr_stop_rx() override{
+        this->_log.DEBUG("sdr stop rx");
         _is_rx_running = false;
         if(_rx_thread && _rx_thread->joinable()){
+            this->_log.DEBUG("Thread rx stream stop");
             _rx_thread->join();
             delete(_rx_thread);
         }
@@ -134,6 +140,7 @@ public:
             iio_channel_disable(_rx0_q);
             _rx0_q = nullptr;
         }
+        this->_log.DEBUG("IS end ...");
     }
 
     /**
@@ -297,13 +304,16 @@ bool iioDevice::set_iio_rx_buffer(uint32_t samples_count) {
         iio_buffer_destroy(_rx_buf);
     }
     if(_rx){
-        this->_log.INFO("Set kernel Rx buffer ...");
+        string log("Set kernel Rx buffer ");
         iio_device_set_kernel_buffers_count(_rx,2);
         _rx_buf = iio_device_create_buffer(_rx,samples_count, false);
+        log += to_string(samples_count);
+        log += string(" ...");
+        this->_log.INFO(log);
     }
     if(!_rx_buf)
     {
-        this->_log.INFO("Could not create Rx buffer ...");
+        this->_log.ERROR("Could not create Rx buffer ...");
         return false;
     }
     return true;
