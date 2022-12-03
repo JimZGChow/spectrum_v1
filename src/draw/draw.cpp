@@ -5,7 +5,6 @@
 
 #define DATABUFF_SIZE 100*1024
 
-QMutex lock;
 spectrumProcess::spectrumProcess(QCustomPlot *custcomPlot, QCustomPlot *small_plot_1M) {
     this->_RF_sample_rate = 2.5e6;
     this->_RF_band_width  = 2.0e6;
@@ -26,6 +25,7 @@ spectrumProcess::spectrumProcess(QCustomPlot *custcomPlot, QCustomPlot *small_pl
 }
 
 spectrumProcess::~spectrumProcess() {
+    this->_log->DEBUG("~spectrumProcess ...");
     delete _buffer_data;
     delete _spectrum_draw;
     delete _spectrum_fft;
@@ -57,29 +57,36 @@ void spectrumProcess::run() {
 }
 
 void spectrumProcess::clicked_status(bool is_on) {
-    lock.lock();
-
     this->_is_running = is_on;
-
     if(is_on){
-        _device = mp::sdrDevice::make_sdrDevice("iio","ip:192.168.1.10");
-        if(_device->sdr_open()){
-            emit is_run(true);
-            _spectrum_draw->start();
-            this->start();
+        try {
+            _device = mp::sdrDevice::make_sdrDevice("iio","ip:192.168.1.10");
+            if(_device->sdr_open()){
+                emit is_run(true);
+                _spectrum_draw->start();
+                this->start();
 
+            }
+            else{
+                emit is_run(false);
+            }
         }
-        else{
-            emit is_run(false);
-        }
+       catch (...){
+           this->_log->ERROR("Make sdr device Failed ...");
+       }
 
     }
     else{
-        _device->sdr_close();
-        _spectrum_draw->run_scope_drawing(is_on);
-        emit is_run(false);
+        try {
+            emit is_run(false);
+            _device->sdr_close();
+            msleep(10);
+            _spectrum_draw->run_scope_drawing(is_on);
+        }
+       catch (...){
+           this->_log->ERROR("Close sdr device Failed ...");
+       }
     }
-    lock.unlock();
 
 }
 
@@ -102,6 +109,9 @@ void spectrumProcess::get_rx_data(mp::sdr_transfer *transfer) {
 
 }
 
+/********************************************************
+ * It's different opject
+ * ******************************************************/
 SpectrumScope::SpectrumScope(QCustomPlot *customPlot, QCustomPlot *small_plot, DataBuffer<float> *scope_buffer,
                              int samples,
                              double frequency, double fs, double bandwidth) {
@@ -131,30 +141,40 @@ SpectrumScope::~SpectrumScope() {
 }
 
 void SpectrumScope::display(const QVector<double> &x_axis, const QVector<double> &y_axis, bool is_small) {
-    if(not is_small){
-        this->_fft_scope->graph(0)->setData(x_axis, y_axis);
-        this->_fft_scope->xAxis->rescale();
-        this->_fft_scope->replot(QCustomPlot::rpQueuedReplot);
+    try {
+        if(not is_small){
+            this->_fft_scope->graph(0)->setData(x_axis, y_axis);
+            this->_fft_scope->xAxis->rescale();
+            this->_fft_scope->replot(QCustomPlot::rpQueuedReplot);
+        }
+        else{
+            this->_fft_1Mscope->graph(0)->setData(x_axis, y_axis);
+            this->_fft_1Mscope->xAxis->rescale();
+            this->_fft_1Mscope->replot(QCustomPlot::rpQueuedReplot);
+        }
     }
-    else{
-        this->_fft_1Mscope->graph(0)->setData(x_axis, y_axis);
-        this->_fft_1Mscope->xAxis->rescale();
-        this->_fft_1Mscope->replot(QCustomPlot::rpQueuedReplot);
+    catch (...){
+        this->_log->ERROR("Display error ...");
     }
 }
 
 void SpectrumScope::buffer_data_loaded() {
-    if(_scope_buffer->get_data_buffer_read_available() > 0){
-        uint32_t get_data = _scope_buffer->get_data_from_buffer(_spectrum_data_buffer_fft,2 * _show_size);
-        if(get_data != _show_size * 2){
-            qDebug() << "buffer_loaded "<<get_data;
-            return;
+    try {
+        if(_scope_buffer->get_data_buffer_read_available() > 0){
+            uint32_t get_data = _scope_buffer->get_data_from_buffer(_spectrum_data_buffer_fft,2 * _show_size);
+            if(get_data != _show_size * 2){
+                qDebug() << "buffer_loaded "<<get_data;
+                return;
+            }
+            else if(_doFFT_buffer->get_data_buffer_write_available() > 0){
+                _spectrum_fft->do_FFT();
+                _spectrum_fft->do_Shift();
+                _doFFT_buffer->put_data_into_buffer(_spectrum_data_buffer_fft,2 * _show_size);
+            }
         }
-        else if(_doFFT_buffer->get_data_buffer_write_available() > 0){
-            _spectrum_fft->do_FFT();
-            _spectrum_fft->do_Shift();
-            _doFFT_buffer->put_data_into_buffer(_spectrum_data_buffer_fft,2 * _show_size);
-        }
+    }
+    catch (...){
+        this->_log->ERROR("Buffer_data_loaded failed ...");
     }
 }
 

@@ -36,7 +36,6 @@ protected:
 
 private:
     Ui::main_Widget *ui;
-    DataBuffer<double> *_spectrum_buff;
     spectrumProcess *_spectrum_process;
 
     bool _isrunning;

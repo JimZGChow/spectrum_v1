@@ -10,7 +10,6 @@
 
 main_widget::main_widget(QWidget *parent) :
         QWidget(parent),
-        _spectrum_buff(new DataBuffer<double>(BUFFSIZE)),
         ui(new Ui::main_Widget){
     ui->setupUi(this);
     ui->spinBox_end->setValue(102);
@@ -40,7 +39,6 @@ main_widget::main_widget(QWidget *parent) :
 
 main_widget::~main_widget() {
     delete ui;
-    delete _spectrum_buff;
 }
 
 void main_widget::click() {
