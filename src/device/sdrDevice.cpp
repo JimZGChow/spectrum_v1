@@ -275,7 +275,7 @@ void iioDevice::set_ad9361_fs_hz(iioDevice::iodev type, int chid, long long int 
     if (!get_phy_chan(type, chid, &chn)) {	return; }
     string info("Sampling frequency ");
     info += to_string(fs);
-    this->_log.DEBUG(info);
+//    this->_log.DEBUG(info);
     wr_ch_lli(chn, "sampling_frequency",       fs);
 }
 

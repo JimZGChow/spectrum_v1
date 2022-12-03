@@ -6,14 +6,14 @@
 #define SPECTRUM_MY_MATH_H
 
 #include <cmath>
+#include "QVector"
 
+int get_one_number_from_position(double input,int index);
 
-int get_one_number_from_position(double input,int index){
-    return index == 9 ? (int)((long long int)input / (long long int)(pow(10,index))):
-                   (int)(((long long int)input % (long long int)(pow(10,index+1))) / (long long int) pow(10,index));
-}
+/**
+ * Moving average algorithm
+ * */
 
-
-
+void fft_data_average(QVector<double>& src_data,int average_point,int all_sample_size);
 
 #endif //SPECTRUM_MY_MATH_H

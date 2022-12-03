@@ -9,6 +9,7 @@
 #ifndef UI_MAIN_WIDGET_H
 #define UI_MAIN_WIDGET_H
 
+#include <QtCore/QDate>
 #include <QtCore/QVariant>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QComboBox>
@@ -37,7 +38,7 @@ public:
     QSplitter *splitter_3;
     QSplitter *splitter;
     QCustomPlot *spectrum_plot;
-    QWidget *waterfall_widget;
+    QCustomPlot *waterfall_widget;
     QWidget *pow_widget;
     QHBoxLayout *horizontalLayout;
     QSplitter *splitter_4;
@@ -115,7 +116,7 @@ public:
         spectrum_plot->setSizePolicy(sizePolicy1);
         spectrum_plot->setStyleSheet(QString::fromUtf8("background-color: rgb(85, 87, 83);"));
         splitter->addWidget(spectrum_plot);
-        waterfall_widget = new QWidget(splitter);
+        waterfall_widget = new QCustomPlot(splitter);
         waterfall_widget->setObjectName(QString::fromUtf8("waterfall_widget"));
         QSizePolicy sizePolicy2(QSizePolicy::Preferred, QSizePolicy::Preferred);
         sizePolicy2.setHorizontalStretch(0);
@@ -161,8 +162,10 @@ public:
         dateTimeEdit->setObjectName(QString::fromUtf8("dateTimeEdit"));
         dateTimeEdit->setAlignment(Qt::AlignCenter);
         dateTimeEdit->setReadOnly(true);
+        dateTimeEdit->setDateTime(QDateTime(QDate(2000, 1, 1), QTime(0, 0, 0)));
         dateTimeEdit->setTime(QTime(0, 0, 0));
-        dateTimeEdit->setMinimumTime(QTime(12, 0, 0));
+        dateTimeEdit->setMaximumDate(QDate(9999, 12, 31));
+        dateTimeEdit->setMinimumTime(QTime(0, 0, 0));
         splitter_4->addWidget(dateTimeEdit);
 
         horizontalLayout->addWidget(splitter_4);
@@ -205,7 +208,7 @@ public:
         horizontalLayout_2->setContentsMargins(-1, -1, 0, -1);
         lcdNumber_9 = new QLCDNumber(dockWidgetContents);
         lcdNumber_9->setObjectName(QString::fromUtf8("lcdNumber_9"));
-        lcdNumber_9->setStyleSheet(QString::fromUtf8("background-color: rgb(193, 125, 17);"));
+        lcdNumber_9->setStyleSheet(QString::fromUtf8("background-color: rgb(186, 189, 182);"));
         lcdNumber_9->setDigitCount(1);
 
         horizontalLayout_2->addWidget(lcdNumber_9);
@@ -233,7 +236,7 @@ public:
 
         lcdNumber_5 = new QLCDNumber(dockWidgetContents);
         lcdNumber_5->setObjectName(QString::fromUtf8("lcdNumber_5"));
-        lcdNumber_5->setStyleSheet(QString::fromUtf8("background-color: rgb(136, 138, 133);"));
+        lcdNumber_5->setStyleSheet(QString::fromUtf8("background-color: rgb(211, 215, 207);"));
         lcdNumber_5->setDigitCount(1);
         lcdNumber_5->setProperty("value", QVariant(5.000000000000000));
 
@@ -241,14 +244,14 @@ public:
 
         lcdNumber_4 = new QLCDNumber(dockWidgetContents);
         lcdNumber_4->setObjectName(QString::fromUtf8("lcdNumber_4"));
-        lcdNumber_4->setStyleSheet(QString::fromUtf8("background-color: rgb(136, 138, 133);"));
+        lcdNumber_4->setStyleSheet(QString::fromUtf8("background-color: rgb(211, 215, 207);"));
         lcdNumber_4->setDigitCount(1);
 
         horizontalLayout_2->addWidget(lcdNumber_4);
 
         lcdNumber_3 = new QLCDNumber(dockWidgetContents);
         lcdNumber_3->setObjectName(QString::fromUtf8("lcdNumber_3"));
-        lcdNumber_3->setStyleSheet(QString::fromUtf8("background-color: rgb(136, 138, 133);"));
+        lcdNumber_3->setStyleSheet(QString::fromUtf8("background-color: rgb(211, 215, 207);"));
         lcdNumber_3->setDigitCount(1);
 
         horizontalLayout_2->addWidget(lcdNumber_3);
@@ -386,6 +389,7 @@ public:
         sizePolicy10.setVerticalStretch(0);
         sizePolicy10.setHeightForWidth(comboBox_gain_mode->sizePolicy().hasHeightForWidth());
         comboBox_gain_mode->setSizePolicy(sizePolicy10);
+        comboBox_gain_mode->setEditable(false);
 
         horizontalLayout_7->addWidget(comboBox_gain_mode);
 
@@ -401,6 +405,9 @@ public:
 
         horizontalSlider = new QSlider(dockWidgetContents);
         horizontalSlider->setObjectName(QString::fromUtf8("horizontalSlider"));
+        horizontalSlider->setMinimum(-2);
+        horizontalSlider->setMaximum(71);
+        horizontalSlider->setValue(50);
         horizontalSlider->setOrientation(Qt::Horizontal);
 
         horizontalLayout_6->addWidget(horizontalSlider);
@@ -461,6 +468,7 @@ public:
         main_Widget->setWindowTitle(QApplication::translate("main_Widget", "spectrum analize", nullptr));
         pushButton->setText(QString());
         lineEdit->setPlaceholderText(QApplication::translate("main_Widget", "ip:192.168.1.10", nullptr));
+        dateTimeEdit->setDisplayFormat(QApplication::translate("main_Widget", "yyyy/M/d H:mm:ss", nullptr));
         dockWidget->setWindowTitle(QApplication::translate("main_Widget", "Receiver configure", nullptr));
         label_span->setText(QApplication::translate("main_Widget", "Span(M)", nullptr));
         label->setText(QApplication::translate("main_Widget", "Start(M)", nullptr));

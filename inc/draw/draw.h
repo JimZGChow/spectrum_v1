@@ -10,6 +10,7 @@
 #include "fix/fftw_common.h"
 #include "fix/source_creator.h"
 #include "fix/log.h"
+#include "fix/my_math.h"
 #include "device/sdrDevice.h"
 
 
@@ -17,9 +18,9 @@
 class SpectrumScope : public QThread{
     Q_OBJECT
 public:
-    explicit SpectrumScope(QCustomPlot *customPlot, QCustomPlot *small_plot, DataBuffer<float> *scope_buffer,
-                           int samples,
-                           double frequency, double fs, double bandwidth);
+    explicit SpectrumScope(QCustomPlot *customPlot, QCustomPlot *small_plot, QCustomPlot *water_fall_plot,
+                           DataBuffer<float> *scope_buffer, int samples, double frequency, double fs,
+                           double bandwidth);
     ~SpectrumScope() override;
 
     void run () override;
@@ -30,6 +31,9 @@ public:
 private:
     QCustomPlot *_fft_scope;
     QCustomPlot *_fft_1Mscope;
+    QCustomPlot *_water_scope;
+
+    QCPColorMap *_pubu_scope;
     common_fft *_spectrum_fft;
     DataBuffer<float> *_scope_buffer;
     int _show_size;
@@ -40,6 +44,8 @@ private:
     bool _is_drawing;
     mp::log *_log;
     double _fs,_freq,_bandwidth;
+
+    QList<QVector<double>> _water_list;
 public slots:
     void buffer_data_loaded();
 };
@@ -48,7 +54,7 @@ public slots:
 class spectrumProcess : public QThread{
     Q_OBJECT
 public:
-    explicit spectrumProcess(QCustomPlot *custcomPlot, QCustomPlot *small_plot_1M);
+    explicit spectrumProcess(QCustomPlot *custcomPlot, QCustomPlot *small_plot_1M, QCustomPlot *water_fall);
     ~spectrumProcess() override;
 
     void run() override;
@@ -72,9 +78,12 @@ private:
     double _RF_sample_rate;
     double _RF_band_width;
     double _RF_frequency;
+    double _RF_gain;
 
 public slots:
     void clicked_status(bool);
+    void changed_rf(double span,double frequency);
+    void gain_change(int);
 
 signals:
     void buffer_data_load();

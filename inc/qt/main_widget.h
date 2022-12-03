@@ -28,21 +28,25 @@ public slots:
     void start_change(int);
     void end_change(int);
     void click();
+    void time_out();
     void is_running(bool);
 signals:
     void click_status(bool);
+    void change_rf(double span,double frequency);
 
 protected:
 
 private:
     Ui::main_Widget *ui;
     spectrumProcess *_spectrum_process;
-
+    QTimer *_time;
     bool _isrunning;
+
 
 private:
     void spectrum_draw_init();
     void spectrum_1M_draw_init();
+    void waterFall_draw_init();
 };
 
 

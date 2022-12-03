@@ -3,15 +3,16 @@
 //
 #include "draw/draw.h"
 
-#define DATABUFF_SIZE 100*1024
+#define DATABUFF_SIZE 30*1024
 
-spectrumProcess::spectrumProcess(QCustomPlot *custcomPlot, QCustomPlot *small_plot_1M) {
+spectrumProcess::spectrumProcess(QCustomPlot *custcomPlot, QCustomPlot *small_plot_1M, QCustomPlot *water_fall) {
     this->_RF_sample_rate = 2.5e6;
     this->_RF_band_width  = 2.0e6;
     this->_RF_frequency   = 100.5e6;
+    this->_RF_gain        = 50;
 
     _buffer_data    = new DataBuffer<float>(DATABUFF_SIZE);
-    _spectrum_draw  = new SpectrumScope(custcomPlot, small_plot_1M, _buffer_data, 1024,
+    _spectrum_draw  = new SpectrumScope(custcomPlot, small_plot_1M, water_fall, _buffer_data, 1024,
                                         _RF_frequency, _RF_sample_rate, _RF_band_width);
     _spectrum_fft   = new common_fft(1024);
     _log            = new mp::log();
@@ -39,6 +40,7 @@ void spectrumProcess::run() {
         _is_running = true;
         _buffer_data->flash_data_buffer();
         _device->sdr_check(0);
+        _device->sdr_set_gain(_RF_gain,0);
         _device->sdr_set_bandwidth(_RF_band_width,0);
         _device->sdr_set_samplerate(_RF_sample_rate,0);
         _device->sdr_set_lo_frequency(_RF_frequency);
@@ -80,6 +82,7 @@ void spectrumProcess::clicked_status(bool is_on) {
         try {
             emit is_run(false);
             _device->sdr_close();
+            _buffer_data->flash_data_buffer();
             msleep(10);
             _spectrum_draw->run_scope_drawing(is_on);
         }
@@ -109,14 +112,30 @@ void spectrumProcess::get_rx_data(mp::sdr_transfer *transfer) {
 
 }
 
+void spectrumProcess::changed_rf(double span, double frequency) {
+    if(_is_running){
+        _device->sdr_set_lo_frequency(frequency);
+        _device->sdr_set_bandwidth(span * 1e6,0);
+        _device->sdr_set_samplerate(span * 1e6,0);
+        _spectrum_draw->set_sdr_info(span * 1e6,frequency,span * 1e6);
+    }
+}
+
+void spectrumProcess::gain_change(int value) {
+    if(_is_running){
+        _device->sdr_set_gain(value,0);
+    }
+}
+
 /********************************************************
  * It's different opject
  * ******************************************************/
-SpectrumScope::SpectrumScope(QCustomPlot *customPlot, QCustomPlot *small_plot, DataBuffer<float> *scope_buffer,
-                             int samples,
-                             double frequency, double fs, double bandwidth) {
+SpectrumScope::SpectrumScope(QCustomPlot *customPlot, QCustomPlot *small_plot, QCustomPlot *water_fall_plot,
+                             DataBuffer<float> *scope_buffer, int samples, double frequency, double fs,
+                             double bandwidth) {
     this->_fft_scope    = customPlot;
     this->_fft_1Mscope  = small_plot;
+    this->_water_scope  = water_fall_plot;
     this->_scope_buffer = scope_buffer;
     this->_show_size    = samples;
     this->_is_drawing   = true;
@@ -128,15 +147,18 @@ SpectrumScope::SpectrumScope(QCustomPlot *customPlot, QCustomPlot *small_plot, D
     _doFFT_buffer = new DataBuffer<float>(DATABUFF_SIZE);
     _log          = new mp::log();
     _draw         = fftwf_alloc_complex(sizeof(DSPCOMPLEX) * _show_size);
+    _pubu_scope   = new QCPColorMap(water_fall_plot->yAxis,water_fall_plot->xAxis);
+
 
     _spectrum_data_buffer_fft = _spectrum_fft ->getVector();
-
+    _pubu_scope->data()->setSize(512 , _show_size);
 }
 
 SpectrumScope::~SpectrumScope() {
     delete _spectrum_fft;
     delete _doFFT_buffer;
     delete _log;
+    delete _pubu_scope;
     fftwf_free(_draw);
 }
 
@@ -196,6 +218,7 @@ void SpectrumScope::run() {
                         double A = 2 * M / 1024;
                         y_fft[i] = 20 * log10(A / 1e3);
                     }
+                    fft_data_average(y_fft,5,_show_size);
                     this->display(x_fft, y_fft, false);
 
                     /* just draw 1M */
@@ -212,7 +235,24 @@ void SpectrumScope::run() {
                         double A = 2 * M / 1024;
                         y1_fft[i] = 20 * log10(A / 1e3);
                     }
+                    fft_data_average(y1_fft,3,draw_number);
+
                     this->display(x1_fft,y1_fft,true);
+
+                    if(_water_list.size() > 511){
+                        _water_list.removeLast();
+                    }
+                    _water_list.prepend(y_fft);
+                    for(int i=0;i<_water_list.size();i++){
+                        for(int j=0;j<_show_size;j++){
+                            _pubu_scope->data()->setCell(i,j, qRound(_water_list.at(i).at(j)));
+                        }
+                    }
+                    _pubu_scope->setGradient(QCPColorGradient::gpSpectrum);
+                    _pubu_scope->rescaleDataRange(true);
+                    this->_water_scope->rescaleAxes();
+                    this->_water_scope->replot(QCustomPlot::rpQueuedReplot);
+
                 }
             }
             msleep(80);
@@ -225,8 +265,9 @@ void SpectrumScope::run() {
 
 void SpectrumScope::run_scope_drawing(bool options) {
     this->_is_drawing = options;
-
-
+    if(not options){
+        this->_doFFT_buffer->flash_data_buffer();
+    }
 }
 
 void SpectrumScope::set_sdr_info(double fs, double frequency, double bandwidth) {

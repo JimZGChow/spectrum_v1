@@ -10,6 +10,7 @@
 
 main_widget::main_widget(QWidget *parent) :
         QWidget(parent),
+        _time(new QTimer),
         ui(new Ui::main_Widget){
     ui->setupUi(this);
     ui->spinBox_end->setValue(102);
@@ -18,27 +19,38 @@ main_widget::main_widget(QWidget *parent) :
     ui->dockWidget->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
     /* draw plot setup */
 
+    this->_time->setInterval(1000);
+    this->_time->start();
     this->spectrum_draw_init();
     this->spectrum_1M_draw_init();
+    this->waterFall_draw_init();
+
 
     this -> _isrunning = false;
-    this -> _spectrum_process = new spectrumProcess(ui->spectrum_plot, ui->plot_1M);
+    this -> _spectrum_process = new spectrumProcess(ui->spectrum_plot, ui->plot_1M, ui->waterfall_widget);
     connect(ui->spinBox_span, SIGNAL(valueChanged(int)),
             this, SLOT(span_change(int)));
     connect(ui->spinBox_start, SIGNAL(valueChanged(int)),
             this, SLOT(start_change(int)));
     connect(ui->spinBox_end, SIGNAL(valueChanged(int)),
             this, SLOT(end_change(int)));
+    connect(ui->horizontalSlider,SIGNAL(valueChanged(int)),
+            this->_spectrum_process,SLOT(gain_change(int)));
     connect(ui->pushButton,SIGNAL(clicked()),
             this,SLOT(click()));
     connect(this,SIGNAL(click_status(bool)),
             this->_spectrum_process,SLOT(clicked_status(bool)));
     connect(this->_spectrum_process,SIGNAL(is_run(bool)),
             this,SLOT(is_running(bool)));
+    connect(this, SIGNAL(change_rf(double, double)),
+            this->_spectrum_process,SLOT(changed_rf(double, double)));
+    connect(this->_time, SIGNAL(timeout()),
+            this,SLOT(time_out()));
 }
 
 main_widget::~main_widget() {
     delete ui;
+    delete _time;
 }
 
 void main_widget::click() {
@@ -73,6 +85,7 @@ void main_widget::span_change(int value) {
     ui->lcdNumber_7->display(get_one_number_from_position(center_frequency,7));
     ui->lcdNumber_6->display(get_one_number_from_position(center_frequency,6));
     ui->lcdNumber_5->display(get_one_number_from_position(center_frequency,5));
+    emit change_rf(value,center_frequency);
 }
 
 void main_widget::start_change(int value) {
@@ -243,6 +256,43 @@ void main_widget::spectrum_1M_draw_init() {
     ui->plot_1M->graph(6)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDot,2));
     ui->plot_1M->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
 }
+
+void main_widget::waterFall_draw_init() {
+    QPen pen = ui->waterfall_widget->xAxis->basePen();
+    pen.setColor(Qt::white);
+    ui->waterfall_widget->yAxis->setRangeReversed(true);
+    /* back ground */
+    ui->waterfall_widget->setBackground(QColor(85, 87, 83));
+    ui->waterfall_widget->xAxis->grid()->setVisible(false);
+    ui->waterfall_widget->yAxis->grid()->setVisible(false);
+    ui->waterfall_widget->xAxis->setTicks(false);
+    ui->waterfall_widget->yAxis->setTicks(false);
+    ui->waterfall_widget->xAxis->setSubTicks(false);
+    ui->waterfall_widget->yAxis->setSubTicks(false);
+
+    /* x y label */
+    ui->waterfall_widget->xAxis->setLabelColor(Qt::white);
+    ui->waterfall_widget->yAxis->setLabelColor(Qt::white);
+    ui->waterfall_widget->xAxis->setTickLabelColor(Qt::white);
+    ui->waterfall_widget->yAxis->setTickLabelColor(Qt::white);
+
+    ui->waterfall_widget->xAxis->setRange(70,130,Qt::AlignCenter);
+
+    ui->waterfall_widget->xAxis->setLabel("Freqency (MHz)");
+    ui->waterfall_widget->yAxis->setLabel("Time (s)");
+
+    ui->waterfall_widget->addGraph();
+    ui->waterfall_widget->graph(0)->setPen(QPen(Qt::blue));
+
+
+}
+
+void main_widget::time_out() {
+    ui->dateTimeEdit->setDateTime(QDateTime::currentDateTime());
+
+}
+
+
 
 
 

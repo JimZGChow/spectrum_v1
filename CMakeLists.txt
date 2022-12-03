@@ -26,7 +26,7 @@ add_executable(spectrum main.cpp src/qt/main_widget.cpp
         inc/fix/fftw_common.h src/draw/draw.cpp
         inc/fix/source_creator.h src/fix/source_creator.cpp
         inc/device/sdrDevice.h inc/fix/log.h src/device/sdrDevice.cpp
-        src/fix/log.cpp)
+        src/fix/log.cpp src/fix/my_math.cpp)
 
 target_link_libraries(spectrum
         Qt5::Core
