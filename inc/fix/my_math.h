@@ -16,4 +16,7 @@ int get_one_number_from_position(double input,int index);
 
 void fft_data_average(QVector<double>& src_data,int average_point,int all_sample_size);
 
+float set_window(int16_t i, int size, int index, int window_type);
+
+void get_window_coefficient(float *coefficient,int size,int window_type);
 #endif //SPECTRUM_MY_MATH_H

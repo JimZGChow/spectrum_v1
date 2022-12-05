@@ -25,6 +25,8 @@ public:
 
     void run () override;
     void set_sdr_info(double fs,double frequency,double bandwidth);
+    void set_fft_size(int fft_size);
+    void set_fft_average(int average_point);
     void display(const QVector<double> &x_axis, const QVector<double> &y_axis, bool is_small);
     void run_scope_drawing(bool options);
 
@@ -44,10 +46,17 @@ private:
     bool _is_drawing;
     mp::log *_log;
     double _fs,_freq,_bandwidth;
+    int _average_point;
+
 
     QList<QVector<double>> _water_list;
 public slots:
     void buffer_data_loaded();
+
+private:
+    void draw_main_scope();
+    void draw_1M_scope();
+    void draw_water_fall_scope();
 };
 
 
@@ -80,11 +89,15 @@ private:
     double _RF_frequency;
     double _RF_gain;
 
+    int _window_type;
+    float *_window_coefficient;
 public slots:
     void clicked_status(bool);
     void changed_rf(double span,double frequency);
     void gain_change(int);
-
+    void fft_size_changed(int);
+    void averageChanged(int);
+    void fft_window_changed(int);
 signals:
     void buffer_data_load();
     void is_run(bool);

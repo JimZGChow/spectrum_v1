@@ -10,10 +10,24 @@
 #include "fix/dataBuffer.h"
 #include "draw/draw.h"
 
-#define BUFFSIZE 1*1024
 QT_BEGIN_NAMESPACE
 namespace Ui { class main_widget; }
 QT_END_NAMESPACE
+
+
+enum fft_size_e{
+    SIZE256,
+    SIZE512,
+    SIZE1024,
+    SIZE2048
+};
+
+enum fft_window_e{
+    WINDOWHAMMING,
+    WINDOWHANNING,
+    WINDOWBLACKMAN,
+    NOWINDOW
+};
 
 class main_widget : public QWidget {
 Q_OBJECT
@@ -47,6 +61,7 @@ private:
     void spectrum_draw_init();
     void spectrum_1M_draw_init();
     void waterFall_draw_init();
+    void comboBox_init();
 };
 
 

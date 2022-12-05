@@ -24,6 +24,7 @@ main_widget::main_widget(QWidget *parent) :
     this->spectrum_draw_init();
     this->spectrum_1M_draw_init();
     this->waterFall_draw_init();
+    this->comboBox_init();
 
 
     this -> _isrunning = false;
@@ -34,6 +35,12 @@ main_widget::main_widget(QWidget *parent) :
             this, SLOT(start_change(int)));
     connect(ui->spinBox_end, SIGNAL(valueChanged(int)),
             this, SLOT(end_change(int)));
+    connect(ui->spinBox_average, SIGNAL(valueChanged(int)),
+            this->_spectrum_process,SLOT(averageChanged(int)));
+    connect(ui->comboBox_fft_size, SIGNAL(currentIndexChanged(int)),
+            this->_spectrum_process,SLOT(fft_size_changed(int)));
+    connect(ui->comboBox_window,SIGNAL(currentIndexChanged(int)),
+            this->_spectrum_process,SLOT(fft_window_changed(int)));
     connect(ui->horizontalSlider,SIGNAL(valueChanged(int)),
             this->_spectrum_process,SLOT(gain_change(int)));
     connect(ui->pushButton,SIGNAL(clicked()),
@@ -106,6 +113,20 @@ void main_widget::end_change(int value) {
         span_change( value - ui->spinBox_start->value());
     }
     ui->spinBox_span->setValue(ui->spinBox_end->value() - ui->spinBox_start->value());
+}
+
+void main_widget::comboBox_init() {
+    ui->comboBox_fft_size->addItem("256");
+    ui->comboBox_fft_size->addItem("512");
+    ui->comboBox_fft_size->addItem("1024");
+    ui->comboBox_fft_size->addItem("2048");
+    ui->comboBox_fft_size->setCurrentIndex(SIZE1024);
+    ui->comboBox_window->addItem("hamming");
+    ui->comboBox_window->addItem("hanning");
+    ui->comboBox_window->addItem("black-man");
+    ui->comboBox_window->addItem("no-window");
+    ui->comboBox_window->setCurrentIndex(WINDOWHAMMING);
+
 }
 
 /**
@@ -287,10 +308,12 @@ void main_widget::waterFall_draw_init() {
 
 }
 
+/* set time clock calculate time */
 void main_widget::time_out() {
     ui->dateTimeEdit->setDateTime(QDateTime::currentDateTime());
-
 }
+
+
 
 
 

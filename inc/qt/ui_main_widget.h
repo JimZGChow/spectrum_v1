@@ -81,6 +81,21 @@ public:
     QLabel *label_4;
     QSlider *horizontalSlider;
     QWidget *draw_configure_widget;
+    QGridLayout *gridLayout_4;
+    QDockWidget *dockWidget__draw_configure;
+    QWidget *dockWidgetContents_2;
+    QWidget *layoutWidget;
+    QHBoxLayout *horizontalLayout_9;
+    QLabel *label_6;
+    QSpinBox *spinBox_average;
+    QWidget *layoutWidget_2;
+    QHBoxLayout *horizontalLayout_10;
+    QLabel *label_7;
+    QComboBox *comboBox_window;
+    QWidget *widget;
+    QHBoxLayout *horizontalLayout_8;
+    QLabel *label_5;
+    QComboBox *comboBox_fft_size;
     QWidget *add;
     QTabWidget *tabWidget_2;
     QWidget *small_show_widget;
@@ -425,6 +440,70 @@ public:
         tabWidget->addTab(span_configure_widget, QString());
         draw_configure_widget = new QWidget();
         draw_configure_widget->setObjectName(QString::fromUtf8("draw_configure_widget"));
+        gridLayout_4 = new QGridLayout(draw_configure_widget);
+        gridLayout_4->setObjectName(QString::fromUtf8("gridLayout_4"));
+        dockWidget__draw_configure = new QDockWidget(draw_configure_widget);
+        dockWidget__draw_configure->setObjectName(QString::fromUtf8("dockWidget__draw_configure"));
+        dockWidgetContents_2 = new QWidget();
+        dockWidgetContents_2->setObjectName(QString::fromUtf8("dockWidgetContents_2"));
+        layoutWidget = new QWidget(dockWidgetContents_2);
+        layoutWidget->setObjectName(QString::fromUtf8("layoutWidget"));
+        layoutWidget->setGeometry(QRect(40, 200, 291, 41));
+        horizontalLayout_9 = new QHBoxLayout(layoutWidget);
+        horizontalLayout_9->setObjectName(QString::fromUtf8("horizontalLayout_9"));
+        horizontalLayout_9->setContentsMargins(0, 0, 0, 0);
+        label_6 = new QLabel(layoutWidget);
+        label_6->setObjectName(QString::fromUtf8("label_6"));
+
+        horizontalLayout_9->addWidget(label_6);
+
+        spinBox_average = new QSpinBox(layoutWidget);
+        spinBox_average->setObjectName(QString::fromUtf8("spinBox_average"));
+        spinBox_average->setAlignment(Qt::AlignCenter);
+        spinBox_average->setMinimum(1);
+        spinBox_average->setMaximum(200);
+        spinBox_average->setValue(5);
+
+        horizontalLayout_9->addWidget(spinBox_average);
+
+        layoutWidget_2 = new QWidget(dockWidgetContents_2);
+        layoutWidget_2->setObjectName(QString::fromUtf8("layoutWidget_2"));
+        layoutWidget_2->setGeometry(QRect(40, 60, 291, 41));
+        horizontalLayout_10 = new QHBoxLayout(layoutWidget_2);
+        horizontalLayout_10->setObjectName(QString::fromUtf8("horizontalLayout_10"));
+        horizontalLayout_10->setContentsMargins(0, 0, 0, 0);
+        label_7 = new QLabel(layoutWidget_2);
+        label_7->setObjectName(QString::fromUtf8("label_7"));
+
+        horizontalLayout_10->addWidget(label_7);
+
+        comboBox_window = new QComboBox(layoutWidget_2);
+        comboBox_window->setObjectName(QString::fromUtf8("comboBox_window"));
+        comboBox_window->setStyleSheet(QString::fromUtf8("color: rgb(0, 0, 0);"));
+
+        horizontalLayout_10->addWidget(comboBox_window);
+
+        widget = new QWidget(dockWidgetContents_2);
+        widget->setObjectName(QString::fromUtf8("widget"));
+        widget->setGeometry(QRect(40, 10, 291, 41));
+        horizontalLayout_8 = new QHBoxLayout(widget);
+        horizontalLayout_8->setObjectName(QString::fromUtf8("horizontalLayout_8"));
+        horizontalLayout_8->setContentsMargins(0, 0, 0, 0);
+        label_5 = new QLabel(widget);
+        label_5->setObjectName(QString::fromUtf8("label_5"));
+
+        horizontalLayout_8->addWidget(label_5);
+
+        comboBox_fft_size = new QComboBox(widget);
+        comboBox_fft_size->setObjectName(QString::fromUtf8("comboBox_fft_size"));
+        comboBox_fft_size->setStyleSheet(QString::fromUtf8("color: rgb(0, 0, 0);"));
+
+        horizontalLayout_8->addWidget(comboBox_fft_size);
+
+        dockWidget__draw_configure->setWidget(dockWidgetContents_2);
+
+        gridLayout_4->addWidget(dockWidget__draw_configure, 0, 0, 1, 1);
+
         tabWidget->addTab(draw_configure_widget, QString());
         add = new QWidget();
         add->setObjectName(QString::fromUtf8("add"));
@@ -458,6 +537,7 @@ public:
         retranslateUi(main_Widget);
 
         tabWidget->setCurrentIndex(0);
+        comboBox_fft_size->setCurrentIndex(-1);
 
 
         QMetaObject::connectSlotsByName(main_Widget);
@@ -476,6 +556,11 @@ public:
         label_3->setText(QApplication::translate("main_Widget", "Gain mode", nullptr));
         label_4->setText(QApplication::translate("main_Widget", "Gain ", nullptr));
         tabWidget->setTabText(tabWidget->indexOf(span_configure_widget), QApplication::translate("main_Widget", "Span Configure", nullptr));
+        dockWidget__draw_configure->setWindowTitle(QApplication::translate("main_Widget", "Show configure", nullptr));
+        label_6->setText(QApplication::translate("main_Widget", "average", nullptr));
+        label_7->setText(QApplication::translate("main_Widget", "window", nullptr));
+        label_5->setText(QApplication::translate("main_Widget", "fftpoint", nullptr));
+        comboBox_fft_size->setCurrentText(QString());
         tabWidget->setTabText(tabWidget->indexOf(draw_configure_widget), QApplication::translate("main_Widget", "Draw Configure", nullptr));
         tabWidget->setTabText(tabWidget->indexOf(add), QApplication::translate("main_Widget", "add", nullptr));
         tabWidget_2->setTabText(tabWidget_2->indexOf(small_show_widget), QApplication::translate("main_Widget", "1M Show", nullptr));
