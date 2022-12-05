@@ -29,10 +29,10 @@ The project is developed from time to time.
 **~~Function~~ is down ,Function is on.**
 
 - **Sweep** - You can observe a certain spectrum of interest by setting the center frequency and sweep frequency width.
-- Mark - You can mark different punctuation,the max marks is four but the max dbm.
+- **Mark** - You can mark different punctuation,the max marks is four but the max dbm.
 - ~~**Save img**~~ - You can click screenshot button to save img.
 - **Demodulation** - You can demodulate in different ways.
-- **Water Fall** - You can see water fall
+- ~~**Water Fall**~~ - You can see water fall
 - **Other Function**
 
 ## Connect
