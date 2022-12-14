@@ -2,8 +2,8 @@
 // Created by jcc on 22-12-1.
 //
 
-#ifndef SPECTRUM_DRAW_H
-#define SPECTRUM_DRAW_H
+#ifndef SPECTRUM_SPECTRUMPROCRSS_H
+#define SPECTRUM_SPECTRUMPROCRSS_H
 
 #include "qt/qcustomplot.h"
 #include "fix/dataBuffer.h"
@@ -11,6 +11,7 @@
 #include "fix/source_creator.h"
 #include "fix/log.h"
 #include "fix/my_math.h"
+#include "fix/iqSave.h"
 #include "device/sdrDevice.h"
 
 
@@ -79,7 +80,7 @@ private:
 
     mp::log *_log;
     bool _is_running;
-
+    iqSave _iq_save;
     /* device */
     std::shared_ptr<mp::sdrDevice> _device;
     static void get_rx_data(mp::sdr_transfer *transfer);
@@ -107,4 +108,4 @@ signals:
 
 
 
-#endif //SPECTRUM_DRAW_H
+#endif //SPECTRUM_SPECTRUMPROCRSS_H

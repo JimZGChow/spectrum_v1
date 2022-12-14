@@ -501,9 +501,9 @@ void QCPPainter::makeNonCosmetic()
   This abstract base class defines the basic interface that a paint buffer needs to provide in
   order to be usable by QCustomPlot.
 
-  A paint buffer manages both a surface to draw onto, and the matching paint device. The size of
+  A paint buffer manages both a surface to process onto, and the matching paint device. The size of
   the surface can be changed via \ref setSize. External classes (\ref QCustomPlot and \ref
-  QCPLayer) request a painter via \ref startPainting and then perform the draw calls. Once the
+  QCPLayer) request a painter via \ref startPainting and then perform the process calls. Once the
   painting is complete, \ref donePainting is called, so the paint buffer implementation can do
   clean up if necessary. Before rendering a frame, each paint buffer is usually filled with a color
   using \ref clear (usually the color is \c Qt::transparent), to remove the contents of the
@@ -519,7 +519,7 @@ void QCPPainter::makeNonCosmetic()
 
 /*! \fn virtual QCPPainter *QCPAbstractPaintBuffer::startPainting() = 0
 
-  Returns a \ref QCPPainter which is ready to draw to this buffer. The ownership and thus the
+  Returns a \ref QCPPainter which is ready to process to this buffer. The ownership and thus the
   responsibility to delete the painter after the painting operations are complete is given to the
   caller of this method.
 
@@ -532,10 +532,10 @@ void QCPPainter::makeNonCosmetic()
   indicates a problem with the respective painting backend.
 */
 
-/*! \fn virtual void QCPAbstractPaintBuffer::draw(QCPPainter *painter) const = 0
+/*! \fn virtual void QCPAbstractPaintBuffer::process(QCPPainter *painter) const = 0
 
   Draws the contents of this buffer with the provided \a painter. This is the method that is used
-  to finally join all paint buffers and draw them onto the screen.
+  to finally join all paint buffers and process them onto the screen.
 */
 
 /*! \fn virtual void QCPAbstractPaintBuffer::clear(const QColor &color) = 0
@@ -773,7 +773,7 @@ QCPPainter *QCPPaintBufferGlPbuffer::startPainting()
 }
 
 /* inherits documentation from base class */
-void QCPPaintBufferGlPbuffer::draw(QCPPainter *painter) const
+void QCPPaintBufferGlPbuffer::process(QCPPainter *painter) const
 {
   if (!painter || !painter->isActive())
   {
@@ -896,7 +896,7 @@ void QCPPaintBufferGlFbo::donePainting()
 }
 
 /* inherits documentation from base class */
-void QCPPaintBufferGlFbo::draw(QCPPainter *painter) const
+void QCPPaintBufferGlFbo::process(QCPPainter *painter) const
 {
   if (!painter || !painter->isActive())
   {
@@ -1161,7 +1161,7 @@ void QCPLayer::draw(QCPPainter *painter)
   association is established by the parent QCustomPlot, which manages all paint buffers (see \ref
   QCustomPlot::setupPaintBuffers).
 
-  \see draw
+  \see process
 */
 void QCPLayer::drawToPaintBuffer()
 {
@@ -1193,7 +1193,7 @@ void QCPLayer::drawToPaintBuffer()
   If the layer mode is \ref lmLogical however, this method simply calls \ref QCustomPlot::replot on
   the parent QCustomPlot instance.
 
-  \see draw
+  \see process
 */
 void QCPLayer::replot()
 {
@@ -1295,9 +1295,9 @@ void QCPLayer::removeChild(QCPLayerable *layerable)
   
   This function applies the default antialiasing setting to the specified \a painter, using the
   function \ref applyAntialiasingHint. It is the antialiasing state the painter is put in, when
-  \ref draw is called on the layerable. If the layerable has multiple entities whose antialiasing
+  \ref process is called on the layerable. If the layerable has multiple entities whose antialiasing
   setting may be specified individually, this function should set the antialiasing state of the
-  most prominent entity. In this case however, the \ref draw function usually calls the specialized
+  most prominent entity. In this case however, the \ref process function usually calls the specialized
   versions of this function before drawing each entity, effectively overriding the setting of the
   default antialiasing hint.
   
@@ -1306,20 +1306,20 @@ void QCPLayer::removeChild(QCPLayerable *layerable)
   QCPGraph::setAntialiasedFill and QCPGraph::setAntialiasedScatters. Consequently, there isn't only
   the QCPGraph::applyDefaultAntialiasingHint function (which corresponds to the graph line's
   antialiasing), but specialized ones like QCPGraph::applyFillAntialiasingHint and
-  QCPGraph::applyScattersAntialiasingHint. So before drawing one of those entities, QCPGraph::draw
+  QCPGraph::applyScattersAntialiasingHint. So before drawing one of those entities, QCPGraph::process
   calls the respective specialized applyAntialiasingHint function.
   
   <b>Second example:</b> QCPItemLine consists only of a line so there is only one antialiasing
   setting which can be controlled with QCPItemLine::setAntialiased. (This function is inherited by
   all layerables. The specialized functions, as seen on QCPGraph, must be added explicitly to the
   respective layerable subclass.) Consequently it only has the normal
-  QCPItemLine::applyDefaultAntialiasingHint. The \ref QCPItemLine::draw function doesn't need to
+  QCPItemLine::applyDefaultAntialiasingHint. The \ref QCPItemLine::process function doesn't need to
   care about setting any antialiasing states, because the default antialiasing hint is already set
-  on the painter when the \ref draw function is called, and that's the state it wants to draw the
+  on the painter when the \ref process function is called, and that's the state it wants to process the
   line with.
 */
 
-/*! \fn virtual void QCPLayerable::draw(QCPPainter *painter) const = 0
+/*! \fn virtual void QCPLayerable::process(QCPPainter *painter) const = 0
   \internal
   
   This function draws the layerable with the specified \a painter. It is only called by
@@ -1648,7 +1648,7 @@ QCP::Interaction QCPLayerable::selectionCategory() const
   parent QCustomPlot. Specific subclasses may reimplement this function to provide different
   clipping rects.
   
-  The returned clipping rect is set on the painter before the draw function of the respective
+  The returned clipping rect is set on the painter before the process function of the respective
   object is called.
 */
 QRect QCPLayerable::clipRect() const
@@ -2783,7 +2783,7 @@ QCPDataSelection QCPDataSelection::inverse(const QCPDataRange &outerRange) const
   The appearance of the selection rect can be controlled via \ref setPen and \ref setBrush.
 
   If you wish to provide custom behaviour, e.g. a different visual representation of the selection
-  rect (\ref QCPSelectionRect::draw), you can subclass QCPSelectionRect and pass an instance of
+  rect (\ref QCPSelectionRect::process), you can subclass QCPSelectionRect and pass an instance of
   your subclass to \ref QCustomPlot::setSelectionRect.
 */
 
@@ -2876,7 +2876,7 @@ QCPRange QCPSelectionRect::range(const QCPAxis *axis) const
 }
 
 /*!
-  Sets the pen that will be used to draw the selection rect outline.
+  Sets the pen that will be used to process the selection rect outline.
   
   \see setBrush
 */
@@ -3159,9 +3159,9 @@ void QCPMarginGroup::removeChild(QCP::MarginSide side, QCPLayoutElement *element
   QCPLayout itself derives from \ref QCPLayoutElement, layouts can be nested.
   
   Thus in QCustomPlot one can divide layout elements into two categories: The ones that are
-  invisible by themselves, because they don't draw anything. Their only purpose is to manage the
+  invisible by themselves, because they don't process anything. Their only purpose is to manage the
   position and size of other layout elements. This category of layout elements usually use
-  QCPLayout as base class. Then there is the category of layout elements which actually draw
+  QCPLayout as base class. Then there is the category of layout elements which actually process
   something. For example, QCPAxisRect, QCPLegend and QCPTextElement are of this category. This does
   not necessarily mean that the latter category can't have child layout elements. QCPLegend for
   instance, actually derives from QCPLayoutGrid and the individual legend items are child layout
@@ -3183,7 +3183,7 @@ void QCPMarginGroup::removeChild(QCP::MarginSide side, QCPLayoutElement *element
   In some cases, the area between outer and inner rect is left blank. In other cases the margin
   area is used to display peripheral graphics while the main content is in the inner rect. This is
   where automatic margin calculation becomes interesting because it allows the layout element to
-  adapt the margins to the peripheral graphics it wants to draw. For example, \ref QCPAxisRect
+  adapt the margins to the peripheral graphics it wants to process. For example, \ref QCPAxisRect
   draws the axis labels and tick labels in the margin area, thus needs to adjust the margins (if
   \ref setAutoMargins is enabled) according to the space required by the labels of the axes.
   
@@ -3593,7 +3593,7 @@ void QCPLayoutElement::layoutChanged()
   \brief The abstract base class for layouts
   
   This is an abstract base class for layout elements whose main purpose is to define the position
-  and size of other child layout elements. In most cases, layouts don't draw anything themselves
+  and size of other child layout elements. In most cases, layouts don't process anything themselves
   (but there are exceptions to this, e.g. QCPLegend).
   
   QCPLayout derives from QCPLayoutElement, and thus can itself be nested in other layouts.
@@ -5632,7 +5632,7 @@ int QCPLabelPainterPrivate::size() const
 
 /*! \internal
   
-  Clears the internal label cache. Upon the next \ref draw, all labels will be created new. This
+  Clears the internal label cache. Upon the next \ref process, all labels will be created new. This
   method is called automatically if any parameters have changed that invalidate the cached labels,
   such as font, color, etc. Usually you won't need to call this method manually.
 */
@@ -5644,7 +5644,7 @@ void QCPLabelPainterPrivate::clearCache()
 /*! \internal
   
   Returns a hash that allows uniquely identifying whether the label parameters have changed such
-  that the cached labels must be refreshed (\ref clearCache). It is used in \ref draw. If the
+  that the cached labels must be refreshed (\ref clearCache). It is used in \ref process. If the
   return value of this method hasn't changed since the last redraw, the respective label parameters
   haven't changed and cached labels may be used.
 */
@@ -5670,13 +5670,13 @@ QByteArray QCPLabelPainterPrivate::generateLabelParameterHash() const
   for the bottom axis, \a position would indicate the horizontal pixel position (not coordinate),
   at which the label should be drawn.
   
-  In order to later draw the axis label in a place that doesn't overlap with the tick labels, the
+  In order to later process the axis label in a place that doesn't overlap with the tick labels, the
   largest tick label size is needed. This is acquired by passing a \a tickLabelsSize to the \ref
   drawTickLabel calls during the process of drawing all tick labels of one axis. In every call, \a
   tickLabelsSize is expanded, if the drawn label exceeds the value \a tickLabelsSize currently
   holds.
   
-  The label is drawn with the font and pen that are currently set on the \a painter. To draw
+  The label is drawn with the font and pen that are currently set on the \a painter. To process
   superscripted powers, the font is temporarily made smaller by a fixed factor (see \ref
   getTickLabelData).
 */
@@ -5695,7 +5695,7 @@ void QCPLabelPainterPrivate::drawLabelMaybeCached(QCPPainter *painter, const QFo
       LabelData labelData = getTickLabelData(font, color, rotation, side, text);
       cachedLabel = createCachedLabel(labelData);
     }
-    // if label would be partly clipped by widget border on sides, don't draw it (only for outside tick labels):
+    // if label would be partly clipped by widget border on sides, don't process it (only for outside tick labels):
     bool labelClippedByBorder = false;
     /*
     if (tickLabelSide == QCPAxis::lsOutside)
@@ -5712,10 +5712,10 @@ void QCPLabelPainterPrivate::drawLabelMaybeCached(QCPPainter *painter, const QFo
       finalSize = cachedLabel->pixmap.size()/mParentPlot->bufferDevicePixelRatio(); // TODO: collect this in a member rect list?
     }
     mLabelCache.insert(QString::fromUtf8(key), cachedLabel);
-  } else // label caching disabled, draw text directly on surface:
+  } else // label caching disabled, process text directly on surface:
   {
     LabelData labelData = getTickLabelData(font, color, rotation, side, text);
-    // if label would be partly clipped by widget border on sides, don't draw it (only for outside tick labels):
+    // if label would be partly clipped by widget border on sides, don't process it (only for outside tick labels):
      bool labelClippedByBorder = false;
      /*
     if (tickLabelSide == QCPAxis::lsOutside)
@@ -5778,7 +5778,7 @@ QPointF QCPLabelPainterPrivate::getAnchorPos(const QPointF &tickPos)
   
   Draws the tick label specified in \a labelData with \a painter at the pixel positions \a x and \a
   y. This function is used by \ref placeTickLabel to create new tick labels for the cache, or to
-  directly draw the labels on the QCustomPlot surface when label caching is disabled, i.e. when
+  directly process the labels on the QCustomPlot surface when label caching is disabled, i.e. when
   QCP::phCacheLabels plotting hint is not set.
 */
 void QCPLabelPainterPrivate::drawText(QCPPainter *painter, const QPointF &pos, const LabelData &labelData) const
@@ -5792,7 +5792,7 @@ void QCPLabelPainterPrivate::drawText(QCPPainter *painter, const QPointF &pos, c
   painter->translate(pos);
   painter->setTransform(labelData.transform, true);
   
-  // draw text:
+  // process text:
   painter->setFont(labelData.baseFont);
   painter->setPen(QPen(labelData.color));
   if (!labelData.expPart.isEmpty()) // use superscripted exponent typesetting
@@ -5807,7 +5807,7 @@ void QCPLabelPainterPrivate::drawText(QCPPainter *painter, const QPointF &pos, c
     painter->drawText(0, 0, labelData.totalBounds.width(), labelData.totalBounds.height(), Qt::TextDontClip | Qt::AlignHCenter, labelData.basePart);
   }
   
-  /* Debug code to draw label bounding boxes, baseline, and capheight
+  /* Debug code to process label bounding boxes, baseline, and capheight
   painter->save();
   painter->setPen(QPen(QColor(0, 0, 0, 150)));
   painter->drawRect(labelData.totalBounds);
@@ -5972,7 +5972,7 @@ QCPLabelPainterPrivate::CachedLabel *QCPLabelPainterPrivate::createCachedLabel(c
     result->pixmap = QPixmap(labelData.rotatedTotalBounds.size());
   result->pixmap.fill(Qt::transparent);
   
-  // draw the label into the pixmap
+  // process the label into the pixmap
   // offset is between label anchor and topleft of cache pixmap, so pixmap can be drawn at pos+offset to make the label anchor appear at pos.
   // We use rotatedTotalBounds.topLeft() because rotatedTotalBounds is in a coordinate system where the label anchor is at (0, 0)
   result->offset = labelData.rotatedTotalBounds.topLeft();
@@ -7837,7 +7837,7 @@ QVector<double> QCPAxisTickerLog::createTickVector(double tickStep, const QCPRan
 /*! \class QCPGrid
   \brief Responsible for drawing the grid of a QCPAxis.
   
-  This class is tightly bound to QCPAxis. Every axis owns a grid instance and uses it to draw the
+  This class is tightly bound to QCPAxis. Every axis owns a grid instance and uses it to process the
   grid lines, sub grid lines and zero-line. You can interact with the grid of an axis via \ref
   QCPAxis::grid. Normally, you don't need to create an instance of QCPGrid yourself.
   
@@ -7916,7 +7916,7 @@ void QCPGrid::setSubGridPen(const QPen &pen)
   Sets the pen with which zero lines are drawn.
   
   Zero lines are lines at value coordinate 0 which may be drawn with a different pen than other grid
-  lines. To disable zero lines and just draw normal grid lines at zero, set \a pen to Qt::NoPen.
+  lines. To disable zero lines and just process normal grid lines at zero, set \a pen to Qt::NoPen.
 */
 void QCPGrid::setZeroLinePen(const QPen &pen)
 {
@@ -7928,7 +7928,7 @@ void QCPGrid::setZeroLinePen(const QPen &pen)
   A convenience function to easily set the QPainter::Antialiased hint on the provided \a painter
   before drawing the major grid lines.
 
-  This is the antialiasing state the painter passed to the \ref draw method is in by default.
+  This is the antialiasing state the painter passed to the \ref process method is in by default.
   
   This function takes into account the local setting of the antialiasing flag as well as the
   overrides set with \ref QCustomPlot::setAntialiasedElements and \ref
@@ -7959,7 +7959,7 @@ void QCPGrid::draw(QCPPainter *painter)
   
   Draws the main grid lines and possibly a zero line with the specified painter.
   
-  This is a helper function called by \ref draw.
+  This is a helper function called by \ref process.
 */
 void QCPGrid::drawGridLines(QCPPainter *painter) const
 {
@@ -7969,7 +7969,7 @@ void QCPGrid::drawGridLines(QCPPainter *painter) const
   double t; // helper variable, result of coordinate-to-pixel transforms
   if (mParentAxis->orientation() == Qt::Horizontal)
   {
-    // draw zeroline:
+    // process zeroline:
     int zeroLineIndex = -1;
     if (mZeroLinePen.style() != Qt::NoPen && mParentAxis->mRange.lower < 0 && mParentAxis->mRange.upper > 0)
     {
@@ -7987,18 +7987,18 @@ void QCPGrid::drawGridLines(QCPPainter *painter) const
         }
       }
     }
-    // draw grid lines:
+    // process grid lines:
     applyDefaultAntialiasingHint(painter);
     painter->setPen(mPen);
     for (int i=0; i<tickCount; ++i)
     {
-      if (i == zeroLineIndex) continue; // don't draw a gridline on top of the zeroline
+      if (i == zeroLineIndex) continue; // don't process a gridline on top of the zeroline
       t = mParentAxis->coordToPixel(mParentAxis->mTickVector.at(i)); // x
       painter->drawLine(QLineF(t, mParentAxis->mAxisRect->bottom(), t, mParentAxis->mAxisRect->top()));
     }
   } else
   {
-    // draw zeroline:
+    // process zeroline:
     int zeroLineIndex = -1;
     if (mZeroLinePen.style() != Qt::NoPen && mParentAxis->mRange.lower < 0 && mParentAxis->mRange.upper > 0)
     {
@@ -8016,12 +8016,12 @@ void QCPGrid::drawGridLines(QCPPainter *painter) const
         }
       }
     }
-    // draw grid lines:
+    // process grid lines:
     applyDefaultAntialiasingHint(painter);
     painter->setPen(mPen);
     for (int i=0; i<tickCount; ++i)
     {
-      if (i == zeroLineIndex) continue; // don't draw a gridline on top of the zeroline
+      if (i == zeroLineIndex) continue; // don't process a gridline on top of the zeroline
       t = mParentAxis->coordToPixel(mParentAxis->mTickVector.at(i)); // y
       painter->drawLine(QLineF(mParentAxis->mAxisRect->left(), t, mParentAxis->mAxisRect->right(), t));
     }
@@ -8032,7 +8032,7 @@ void QCPGrid::drawGridLines(QCPPainter *painter) const
   
   Draws the sub grid lines with the specified painter.
   
-  This is a helper function called by \ref draw.
+  This is a helper function called by \ref process.
 */
 void QCPGrid::drawSubGridLines(QCPPainter *painter) const
 {
@@ -9042,7 +9042,7 @@ void QCPAxis::setSelectedLabelColor(const QColor &color)
 }
 
 /*!
-  Sets the pen that is used to draw the axis base line when selected.
+  Sets the pen that is used to process the axis base line when selected.
   
   \see setBasePen, setSelectableParts, setSelectedParts, QCustomPlot::setInteractions
 */
@@ -9052,7 +9052,7 @@ void QCPAxis::setSelectedBasePen(const QPen &pen)
 }
 
 /*!
-  Sets the pen that is used to draw the (major) ticks when selected.
+  Sets the pen that is used to process the (major) ticks when selected.
   
   \see setTickPen, setSelectableParts, setSelectedParts, QCustomPlot::setInteractions
 */
@@ -9062,7 +9062,7 @@ void QCPAxis::setSelectedTickPen(const QPen &pen)
 }
 
 /*!
-  Sets the pen that is used to draw the subticks when selected.
+  Sets the pen that is used to process the subticks when selected.
   
   \see setSubTickPen, setSelectableParts, setSelectedParts, QCustomPlot::setInteractions
 */
@@ -9308,9 +9308,9 @@ double QCPAxis::coordToPixel(double value) const
         return (mRange.upper-value)/mRange.size()*mAxisRect->width()+mAxisRect->left();
     } else // mScaleType == stLogarithmic
     {
-      if (value >= 0.0 && mRange.upper < 0.0) // invalid value for logarithmic scale, just draw it outside visible range
+      if (value >= 0.0 && mRange.upper < 0.0) // invalid value for logarithmic scale, just process it outside visible range
         return !mRangeReversed ? mAxisRect->right()+200 : mAxisRect->left()-200;
-      else if (value <= 0.0 && mRange.upper >= 0.0) // invalid value for logarithmic scale, just draw it outside visible range
+      else if (value <= 0.0 && mRange.upper >= 0.0) // invalid value for logarithmic scale, just process it outside visible range
         return !mRangeReversed ? mAxisRect->left()-200 : mAxisRect->right()+200;
       else
       {
@@ -9330,9 +9330,9 @@ double QCPAxis::coordToPixel(double value) const
         return mAxisRect->bottom()-(mRange.upper-value)/mRange.size()*mAxisRect->height();
     } else // mScaleType == stLogarithmic
     {
-      if (value >= 0.0 && mRange.upper < 0.0) // invalid value for logarithmic scale, just draw it outside visible range
+      if (value >= 0.0 && mRange.upper < 0.0) // invalid value for logarithmic scale, just process it outside visible range
         return !mRangeReversed ? mAxisRect->top()-200 : mAxisRect->bottom()+200;
-      else if (value <= 0.0 && mRange.upper >= 0.0) // invalid value for logarithmic scale, just draw it outside visible range
+      else if (value <= 0.0 && mRange.upper >= 0.0) // invalid value for logarithmic scale, just process it outside visible range
         return !mRangeReversed ? mAxisRect->bottom()+200 : mAxisRect->top()-200;
       else
       {
@@ -9650,7 +9650,7 @@ void QCPAxis::wheelEvent(QWheelEvent *event)
   A convenience function to easily set the QPainter::Antialiased hint on the provided \a painter
   before drawing axis lines.
 
-  This is the antialiasing state the painter passed to the \ref draw method is in by default.
+  This is the antialiasing state the painter passed to the \ref process method is in by default.
   
   This function takes into account the local setting of the antialiasing flag as well as the
   overrides set with \ref QCustomPlot::setAntialiasedElements and \ref
@@ -9697,7 +9697,7 @@ void QCPAxis::draw(QCPPainter *painter)
     }
   }
   
-  // transfer all properties of this axis to QCPAxisPainterPrivate which it needs to draw the axis.
+  // transfer all properties of this axis to QCPAxisPainterPrivate which it needs to process the axis.
   // Note that some axis painter properties are already set by direct feed-through with QCPAxis setters
   mAxisPainter->type = mAxisType;
   mAxisPainter->basePen = getBasePen();
@@ -9739,7 +9739,7 @@ void QCPAxis::setupTickVectors()
 
 /*! \internal
   
-  Returns the pen that is used to draw the axis base line. Depending on the selection state, this
+  Returns the pen that is used to process the axis base line. Depending on the selection state, this
   is either mSelectedBasePen or mBasePen.
 */
 QPen QCPAxis::getBasePen() const
@@ -9749,7 +9749,7 @@ QPen QCPAxis::getBasePen() const
 
 /*! \internal
   
-  Returns the pen that is used to draw the (major) ticks. Depending on the selection state, this
+  Returns the pen that is used to process the (major) ticks. Depending on the selection state, this
   is either mSelectedTickPen or mTickPen.
 */
 QPen QCPAxis::getTickPen() const
@@ -9759,7 +9759,7 @@ QPen QCPAxis::getTickPen() const
 
 /*! \internal
   
-  Returns the pen that is used to draw the subticks. Depending on the selection state, this
+  Returns the pen that is used to process the subticks. Depending on the selection state, this
   is either mSelectedSubTickPen or mSubTickPen.
 */
 QPen QCPAxis::getSubTickPen() const
@@ -9769,7 +9769,7 @@ QPen QCPAxis::getSubTickPen() const
 
 /*! \internal
   
-  Returns the font that is used to draw the tick labels. Depending on the selection state, this
+  Returns the font that is used to process the tick labels. Depending on the selection state, this
   is either mSelectedTickLabelFont or mTickLabelFont.
 */
 QFont QCPAxis::getTickLabelFont() const
@@ -9779,7 +9779,7 @@ QFont QCPAxis::getTickLabelFont() const
 
 /*! \internal
   
-  Returns the font that is used to draw the axis label. Depending on the selection state, this
+  Returns the font that is used to process the axis label. Depending on the selection state, this
   is either mSelectedLabelFont or mLabelFont.
 */
 QFont QCPAxis::getLabelFont() const
@@ -9789,7 +9789,7 @@ QFont QCPAxis::getLabelFont() const
 
 /*! \internal
   
-  Returns the color that is used to draw the tick labels. Depending on the selection state, this
+  Returns the color that is used to process the tick labels. Depending on the selection state, this
   is either mSelectedTickLabelColor or mTickLabelColor.
 */
 QColor QCPAxis::getTickLabelColor() const
@@ -9799,7 +9799,7 @@ QColor QCPAxis::getTickLabelColor() const
 
 /*! \internal
   
-  Returns the color that is used to draw the axis label. Depending on the selection state, this
+  Returns the color that is used to process the axis label. Depending on the selection state, this
   is either mSelectedLabelColor or mLabelColor.
 */
 QColor QCPAxis::getLabelColor() const
@@ -9812,7 +9812,7 @@ QColor QCPAxis::getLabelColor() const
   Returns the appropriate outward margin for this axis. It is needed if \ref
   QCPAxisRect::setAutoMargins is set to true on the parent axis rect. An axis with axis type \ref
   atLeft will return an appropriate left margin, \ref atBottom will return an appropriate bottom
-  margin and so forth. For the calculation, this function goes through similar steps as \ref draw,
+  margin and so forth. For the calculation, this function goes through similar steps as \ref process,
   so changing one function likely requires the modification of the other one as well.
   
   The margin consists of the outward tick length, tick label padding, tick label size, label
@@ -9829,7 +9829,7 @@ int QCPAxis::calculateMargin()
   if (mCachedMarginValid)
     return mCachedMargin;
   
-  // run through similar steps as QCPAxis::draw, and calculate margin needed to fit axis and its labels
+  // run through similar steps as QCPAxis::process, and calculate margin needed to fit axis and its labels
   int margin = 0;
   
   QVector<double> tickPositions; // the final coordToPixel transformed vector passed to QCPAxisPainter
@@ -9953,7 +9953,7 @@ void QCPAxisPainterPrivate::draw(QCPPainter *painter)
     default: break;
   }
   int margin = 0;
-  // draw baseline:
+  // process baseline:
   QLineF baseLine;
   painter->setPen(basePen);
   if (QCPAxis::orientation(type) == Qt::Horizontal)
@@ -9964,7 +9964,7 @@ void QCPAxisPainterPrivate::draw(QCPPainter *painter)
     baseLine = QLineF(baseLine.p2(), baseLine.p1()); // won't make a difference for line itself, but for line endings later
   painter->drawLine(baseLine);
   
-  // draw ticks:
+  // process ticks:
   if (!tickPositions.isEmpty())
   {
     painter->setPen(tickPen);
@@ -9980,7 +9980,7 @@ void QCPAxisPainterPrivate::draw(QCPPainter *painter)
     }
   }
   
-  // draw subticks:
+  // process subticks:
   if (!subTickPositions.isEmpty())
   {
     painter->setPen(subTickPen);
@@ -9998,7 +9998,7 @@ void QCPAxisPainterPrivate::draw(QCPPainter *painter)
   }
   margin += qMax(0, qMax(tickLengthOut, subTickLengthOut));
   
-  // draw axis base endings:
+  // process axis base endings:
   bool antialiasingBackup = painter->antialiasing();
   painter->setAntialiasing(true); // always want endings to be antialiased, even if base and ticks themselves aren't
   painter->setBrush(QBrush(basePen.color()));
@@ -10110,7 +10110,7 @@ void QCPAxisPainterPrivate::draw(QCPPainter *painter)
   mAxisSelectionBox = mAxisSelectionBox.normalized();
   mTickLabelsSelectionBox = mTickLabelsSelectionBox.normalized();
   mLabelSelectionBox = mLabelSelectionBox.normalized();
-  // draw hitboxes for debug purposes:
+  // process hitboxes for debug purposes:
   //painter->setBrush(Qt::NoBrush);
   //painter->drawRects(QVector<QRect>() << mAxisSelectionBox << mTickLabelsSelectionBox << mLabelSelectionBox);
 }
@@ -10162,8 +10162,8 @@ int QCPAxisPainterPrivate::size()
 
 /*! \internal
   
-  Clears the internal label cache. Upon the next \ref draw, all labels will be created new. This
-  method is called automatically in \ref draw, if any parameters have changed that invalidate the
+  Clears the internal label cache. Upon the next \ref process, all labels will be created new. This
+  method is called automatically in \ref process, if any parameters have changed that invalidate the
   cached labels, such as font, color, etc.
 */
 void QCPAxisPainterPrivate::clearCache()
@@ -10174,7 +10174,7 @@ void QCPAxisPainterPrivate::clearCache()
 /*! \internal
   
   Returns a hash that allows uniquely identifying whether the label parameters have changed such
-  that the cached labels must be refreshed (\ref clearCache). It is used in \ref draw. If the
+  that the cached labels must be refreshed (\ref clearCache). It is used in \ref process. If the
   return value of this method hasn't changed since the last redraw, the respective label parameters
   haven't changed and cached labels may be used.
 */
@@ -10200,13 +10200,13 @@ QByteArray QCPAxisPainterPrivate::generateLabelParameterHash() const
   for the bottom axis, \a position would indicate the horizontal pixel position (not coordinate),
   at which the label should be drawn.
   
-  In order to later draw the axis label in a place that doesn't overlap with the tick labels, the
+  In order to later process the axis label in a place that doesn't overlap with the tick labels, the
   largest tick label size is needed. This is acquired by passing a \a tickLabelsSize to the \ref
   drawTickLabel calls during the process of drawing all tick labels of one axis. In every call, \a
   tickLabelsSize is expanded, if the drawn label exceeds the value \a tickLabelsSize currently
   holds.
   
-  The label is drawn with the font and pen that are currently set on the \a painter. To draw
+  The label is drawn with the font and pen that are currently set on the \a painter. To process
   superscripted powers, the font is temporarily made smaller by a fixed factor (see \ref
   getTickLabelData).
 */
@@ -10248,7 +10248,7 @@ void QCPAxisPainterPrivate::placeTickLabel(QCPPainter *painter, double position,
       cachePainter.setPen(painter->pen());
       drawTickLabel(&cachePainter, -labelData.rotatedTotalBounds.topLeft().x(), -labelData.rotatedTotalBounds.topLeft().y(), labelData);
     }
-    // if label would be partly clipped by widget border on sides, don't draw it (only for outside tick labels):
+    // if label would be partly clipped by widget border on sides, don't process it (only for outside tick labels):
     bool labelClippedByBorder = false;
     if (tickLabelSide == QCPAxis::lsOutside)
     {
@@ -10263,11 +10263,11 @@ void QCPAxisPainterPrivate::placeTickLabel(QCPPainter *painter, double position,
       finalSize = cachedLabel->pixmap.size()/mParentPlot->bufferDevicePixelRatio();
     }
     mLabelCache.insert(text, cachedLabel); // return label to cache or insert for the first time if newly created
-  } else // label caching disabled, draw text directly on surface:
+  } else // label caching disabled, process text directly on surface:
   {
     TickLabelData labelData = getTickLabelData(painter->font(), text);
     QPointF finalPosition = labelAnchor + getTickLabelDrawOffset(labelData);
-    // if label would be partly clipped by widget border on sides, don't draw it (only for outside tick labels):
+    // if label would be partly clipped by widget border on sides, don't process it (only for outside tick labels):
      bool labelClippedByBorder = false;
     if (tickLabelSide == QCPAxis::lsOutside)
     {
@@ -10296,7 +10296,7 @@ void QCPAxisPainterPrivate::placeTickLabel(QCPPainter *painter, double position,
   
   Draws the tick label specified in \a labelData with \a painter at the pixel positions \a x and \a
   y. This function is used by \ref placeTickLabel to create new tick labels for the cache, or to
-  directly draw the labels on the QCustomPlot surface when label caching is disabled, i.e. when
+  directly process the labels on the QCustomPlot surface when label caching is disabled, i.e. when
   QCP::phCacheLabels plotting hint is not set.
 */
 void QCPAxisPainterPrivate::drawTickLabel(QCPPainter *painter, double x, double y, const TickLabelData &labelData) const
@@ -10310,7 +10310,7 @@ void QCPAxisPainterPrivate::drawTickLabel(QCPPainter *painter, double x, double 
   if (!qFuzzyIsNull(tickLabelRotation))
     painter->rotate(tickLabelRotation);
   
-  // draw text:
+  // process text:
   if (!labelData.expPart.isEmpty()) // indicator that beautiful powers must be used
   {
     painter->setFont(labelData.baseFont);
@@ -10789,7 +10789,7 @@ void QCPScatterStyle::setShape(QCPScatterStyle::ScatterShape shape)
 }
 
 /*!
-  Sets the pen that will be used to draw scatter points to \a pen.
+  Sets the pen that will be used to process scatter points to \a pen.
   
   If the pen was previously undefined (see \ref isPenDefined), the pen is considered defined after
   a call to this function, even if \a pen is <tt>Qt::NoPen</tt>. If you have defined a pen
@@ -10853,7 +10853,7 @@ void QCPScatterStyle::undefinePen()
   Applies the pen and the brush of this scatter style to \a painter. If this scatter style has an
   undefined pen (\ref isPenDefined), sets the pen of \a painter to \a defaultPen instead.
   
-  This function is used by plottables (or any class that wants to draw scatters) just before a
+  This function is used by plottables (or any class that wants to process scatters) just before a
   number of scatters with this style shall be drawn with the \a painter.
   
   \see drawShape
@@ -11045,7 +11045,7 @@ void QCPScatterStyle::drawShape(QCPPainter *painter, double x, double y) const
   same decorator instance can not be passed to multiple plottables.
   
   Selection decorators can also themselves perform drawing operations by reimplementing \ref
-  drawDecoration, which is called by the plottable's draw method. The base class \ref
+  drawDecoration, which is called by the plottable's process method. The base class \ref
   QCPSelectionDecorator does not make use of this however. For example, \ref
   QCPSelectionDecoratorBracket draws brackets around selected data segments.
 */
@@ -11066,7 +11066,7 @@ QCPSelectionDecorator::~QCPSelectionDecorator()
 }
 
 /*!
-  Sets the pen that will be used by the parent plottable to draw selected data segments.
+  Sets the pen that will be used by the parent plottable to process selected data segments.
 */
 void QCPSelectionDecorator::setPen(const QPen &pen)
 {
@@ -11074,7 +11074,7 @@ void QCPSelectionDecorator::setPen(const QPen &pen)
 }
 
 /*!
-  Sets the brush that will be used by the parent plottable to draw selected data segments.
+  Sets the brush that will be used by the parent plottable to process selected data segments.
 */
 void QCPSelectionDecorator::setBrush(const QBrush &brush)
 {
@@ -11082,7 +11082,7 @@ void QCPSelectionDecorator::setBrush(const QBrush &brush)
 }
 
 /*!
-  Sets the scatter style that will be used by the parent plottable to draw scatters in selected
+  Sets the scatter style that will be used by the parent plottable to process scatters in selected
   data segments.
   
   \a usedProperties specifies which parts of the passed \a scatterStyle will be used by the
@@ -11160,7 +11160,7 @@ void QCPSelectionDecorator::copyFrom(const QCPSelectionDecorator *other)
 }
 
 /*!
-  This method is called by all plottables' draw methods to allow custom selection decorations to be
+  This method is called by all plottables' process methods to allow custom selection decorations to be
   drawn. Use the passed \a painter to perform the drawing operations. \a selection carries the data
   selection for which the decoration shall be drawn.
   
@@ -11229,7 +11229,7 @@ bool QCPSelectionDecorator::registerWithPlottable(QCPAbstractPlottable *plottabl
   If subclassing QCPAbstractPlottable directly, these are the pure virtual functions you must
   implement:
   \li \ref selectTest
-  \li \ref draw
+  \li \ref process
   \li \ref drawLegendIcon
   \li \ref getKeyRange
   \li \ref getValueRange
@@ -11264,12 +11264,12 @@ bool QCPSelectionDecorator::registerWithPlottable(QCPAbstractPlottable *plottabl
     <td>QPointer<\ref QCPAxis> \b mKeyAxis, \b mValueAxis</td>
     <td>The key and value axes this plottable is attached to. Call their QCPAxis::coordToPixel functions to translate coordinates
         to pixels in either the key or value dimension. Make sure to check whether the pointer is \c nullptr before using it. If one of
-        the axes is null, don't draw the plottable.</td>
+        the axes is null, don't process the plottable.</td>
   </tr><tr>
     <td>\ref QCPSelectionDecorator \b mSelectionDecorator</td>
     <td>The currently set selection decorator which specifies how selected data of the plottable shall be drawn and decorated.
         When drawing your data, you must consult this decorator for the appropriate pen/brush before drawing unselected/selected data segments.
-        Finally, you should call its \ref QCPSelectionDecorator::drawDecoration method at the end of your \ref draw implementation.</td>
+        Finally, you should call its \ref QCPSelectionDecorator::drawDecoration method at the end of your \ref process implementation.</td>
   </tr><tr>
     <td>\ref QCP::SelectionType \b mSelectable</td>
     <td>In which composition, if at all, this plottable's data may be selected. Enforcing this setting on the data selection is done
@@ -11323,7 +11323,7 @@ bool QCPSelectionDecorator::registerWithPlottable(QCPAbstractPlottable *plottabl
 /*! \fn void QCPAbstractPlottable::drawLegendIcon(QCPPainter *painter, const QRect &rect) const = 0
   \internal
   
-  called by QCPLegend::draw (via QCPPlottableLegendItem::draw) to create a graphical representation
+  called by QCPLegend::process (via QCPPlottableLegendItem::process) to create a graphical representation
   of this plottable inside \a rect, next to the plottable name.
   
   The passed \a painter has its cliprect set to \a rect, so painting outside of \a rect won't
@@ -11473,7 +11473,7 @@ void QCPAbstractPlottable::setAntialiasedScatters(bool enabled)
 }
 
 /*!
-  The pen is used to draw basic lines that make up the plottable representation in the
+  The pen is used to process basic lines that make up the plottable representation in the
   plot.
   
   For example, the \ref QCPGraph subclass draws its graph lines with this pen.
@@ -11486,7 +11486,7 @@ void QCPAbstractPlottable::setPen(const QPen &pen)
 }
 
 /*!
-  The brush is used to draw basic fills of the plottable representation in the
+  The brush is used to process basic fills of the plottable representation in the
   plot. The Fill can be a color, gradient or texture, see the usage of QBrush.
   
   For example, the \ref QCPGraph subclass draws the fill under the graph with this brush, when
@@ -11896,7 +11896,7 @@ QCP::Interaction QCPAbstractPlottable::selectionCategory() const
   A convenience function to easily set the QPainter::Antialiased hint on the provided \a painter
   before drawing plottable lines.
 
-  This is the antialiasing state the painter passed to the \ref draw method is in by default.
+  This is the antialiasing state the painter passed to the \ref process method is in by default.
   
   This function takes into account the local setting of the antialiasing flag as well as the
   overrides set with \ref QCustomPlot::setAntialiasedElements and \ref
@@ -12819,7 +12819,7 @@ void QCPItemPosition::setPixelPosition(const QPointF &pixelPosition)
   To create an own item, you implement a subclass of QCPAbstractItem. These are the pure
   virtual functions, you must implement:
   \li \ref selectTest
-  \li \ref draw
+  \li \ref process
   
   See the documentation of those functions for what they need to do.
   
@@ -12847,14 +12847,14 @@ void QCPItemPosition::setPixelPosition(const QPointF &pixelPosition)
   }
   \endcode
   
-  \subsection items-drawing The draw function
+  \subsection items-drawing The process function
   
-  To give your item a visual representation, reimplement the \ref draw function and use the passed
-  QCPPainter to draw the item. You can retrieve the item position in pixel coordinates from the
+  To give your item a visual representation, reimplement the \ref process function and use the passed
+  QCPPainter to process the item. You can retrieve the item position in pixel coordinates from the
   position member(s) via \ref QCPItemPosition::pixelPosition.
 
   To optimize performance you should calculate a bounding rect first (don't forget to take the pen
-  width into account), check whether it intersects the \ref clipRect, and only draw the item at all
+  width into account), check whether it intersects the \ref clipRect, and only process the item at all
   if this is the case.
   
   \subsection items-selection The selectTest function
@@ -12901,7 +12901,7 @@ void QCPItemPosition::setPixelPosition(const QPointF &pixelPosition)
 /* end of documentation of inline functions */
 /* start documentation of pure virtual functions */
 
-/*! \fn void QCPAbstractItem::draw(QCPPainter *painter) = 0
+/*! \fn void QCPAbstractItem::process(QCPPainter *painter) = 0
   \internal
   
   Draws this item with the provided \a painter.
@@ -13086,7 +13086,7 @@ bool QCPAbstractItem::hasAnchor(const QString &name) const
   
   If the item is not clipped to an axis rect, QCustomPlot's viewport rect is returned.
   
-  \see draw
+  \see process
 */
 QRect QCPAbstractItem::clipRect() const
 {
@@ -13101,7 +13101,7 @@ QRect QCPAbstractItem::clipRect() const
   A convenience function to easily set the QPainter::Antialiased hint on the provided \a painter
   before drawing item lines.
 
-  This is the antialiasing state the painter passed to the \ref draw method is in by default.
+  This is the antialiasing state the painter passed to the \ref process method is in by default.
   
   This function takes into account the local setting of the antialiasing flag as well as the
   overrides set with \ref QCustomPlot::setAntialiasedElements and \ref
@@ -13281,7 +13281,7 @@ QCP::Interaction QCPAbstractItem::selectionCategory() const
 /*! \fn QCPSelectionRect *QCustomPlot::selectionRect() const
   
   Allows access to the currently used QCPSelectionRect instance (or subclass thereof), that is used
-  to handle and draw selection rect interactions (see \ref setSelectionRectMode).
+  to handle and process selection rect interactions (see \ref setSelectionRectMode).
   
   \see setSelectionRect
 */
@@ -13469,7 +13469,7 @@ QCP::Interaction QCPAbstractItem::selectionCategory() const
 
   \warning However, changing any parameters of this QCustomPlot instance which would normally
   affect the layouting (e.g. axis range order of magnitudes, tick label sizes, etc.) will not issue
-  a second run of the layout step. It will propagate directly to the draw step and may cause
+  a second run of the layout step. It will propagate directly to the process step and may cause
   graphical inconsistencies such as overlapping objects, if sizes or positions have changed.
 
   \see updateLayout, beforeReplot, afterReplot
@@ -15139,7 +15139,7 @@ void QCustomPlot::replot(QCustomPlot::RefreshPriority refreshPriority)
 # endif
   
   updateLayout();
-  // draw all layered objects (grid, axes, plottables, items, legend,...) into their buffers:
+  // process all layered objects (grid, axes, plottables, items, legend,...) into their buffers:
   setupPaintBuffers();
   foreach (QCPLayer *layer, mLayers)
     layer->drawToPaintBuffer();
@@ -15283,7 +15283,7 @@ bool QCustomPlot::savePdf(const QString &fileName, int width, int height, QCP::E
     if (mBackgroundBrush.style() != Qt::NoBrush &&
         mBackgroundBrush.color() != Qt::white &&
         mBackgroundBrush.color() != Qt::transparent &&
-        mBackgroundBrush.color().alpha() > 0) // draw pdf background color if not white/transparent
+        mBackgroundBrush.color().alpha() > 0) // process pdf background color if not white/transparent
       printpainter.fillRect(viewport(), mBackgroundBrush);
     draw(&printpainter);
     printpainter.end();
@@ -15722,14 +15722,14 @@ void QCustomPlot::draw(QCPPainter *painter)
 {
   updateLayout();
   
-  // draw viewport background pixmap:
+  // process viewport background pixmap:
   drawBackground(painter);
 
-  // draw all layered objects (grid, axes, plottables, items, legend,...):
+  // process all layered objects (grid, axes, plottables, items, legend,...):
   foreach (QCPLayer *layer, mLayers)
     layer->draw(painter);
   
-  /* Debug code to draw all layout element rects
+  /* Debug code to process all layout element rects
   foreach (QCPLayoutElement *el, findChildren<QCPLayoutElement*>())
   {
     painter->setBrush(Qt::NoBrush);
@@ -15747,7 +15747,7 @@ void QCustomPlot::draw(QCPPainter *painter)
   QCPLayoutElement::update on the main plot layout.
 
   Here, the layout elements calculate their positions and margins, and prepare for the following
-  draw call.
+  process call.
 */
 void QCustomPlot::updateLayout()
 {
@@ -15771,7 +15771,7 @@ void QCustomPlot::updateLayout()
   dependent on the \ref setBackgroundScaledMode), or when a differend axis background pixmap was
   set.
   
-  Note that this function does not draw a fill with the background brush
+  Note that this function does not process a fill with the background brush
   (\ref setBackground(const QBrush &brush)) beneath the pixmap.
   
   \see setBackground, setBackgroundScaled, setBackgroundScaledMode
@@ -15780,7 +15780,7 @@ void QCustomPlot::drawBackground(QCPPainter *painter)
 {
   // Note: background color is handled in individual replot/save functions
 
-  // draw background pixmap (on top of fill, if brush specified):
+  // process background pixmap (on top of fill, if brush specified):
   if (!mBackgroundPixmap.isNull())
   {
     if (mBackgroundScaled)
@@ -15803,7 +15803,7 @@ void QCustomPlot::drawBackground(QCPPainter *painter)
   Goes through the layers and makes sure this QCustomPlot instance holds the correct number of
   paint buffers and that they have the correct configuration (size, pixel ratio, etc.).
   Allocations, reallocations and deletions of paint buffers are performed as necessary. It also
-  associates the paint buffers with the layers, so they draw themselves into the right buffer when
+  associates the paint buffers with the layers, so they process themselves into the right buffer when
   \ref QCPLayer::drawToPaintBuffer is called. This means it associates adjacent \ref
   QCPLayer::lmLogical layers to a mutual paint buffer and creates dedicated paint buffers for
   layers in \ref QCPLayer::lmBuffered mode.
@@ -16411,7 +16411,7 @@ QPixmap QCustomPlot::toPixmap(int width, int height, double scale)
   int scaledHeight = qRound(scale*newHeight);
 
   QPixmap result(scaledWidth, scaledHeight);
-  result.fill(mBackgroundBrush.style() == Qt::SolidPattern ? mBackgroundBrush.color() : Qt::transparent); // if using non-solid pattern, make transparent now and draw brush pattern later
+  result.fill(mBackgroundBrush.style() == Qt::SolidPattern ? mBackgroundBrush.color() : Qt::transparent); // if using non-solid pattern, make transparent now and process brush pattern later
   QCPPainter painter;
   painter.begin(&result);
   if (painter.isActive())
@@ -16445,7 +16445,7 @@ QPixmap QCustomPlot::toPixmap(int width, int height, double scale)
   appear scaled accordingly.
   
   \note If you are restricted to using a QPainter (instead of QCPPainter), create a temporary QPicture and open a QCPPainter
-  on it. Then call \ref toPainter with this QCPPainter. After ending the paint operation on the picture, draw it with
+  on it. Then call \ref toPainter with this QCPPainter. After ending the paint operation on the picture, process it with
   the QPainter. This will reproduce the painter actions the QCPPainter took, with a QPainter.
   
   \see toPixmap
@@ -16469,7 +16469,7 @@ void QCustomPlot::toPainter(QCPPainter *painter, int width, int height)
     QRect oldViewport = viewport();
     setViewport(QRect(0, 0, newWidth, newHeight));
     painter->setMode(QCPPainter::pmNoCaching);
-    if (mBackgroundBrush.style() != Qt::NoBrush) // unlike in toPixmap, we can't do QPixmap::fill for Qt::SolidPattern brush style, so we also draw solid fills with fillRect here
+    if (mBackgroundBrush.style() != Qt::NoBrush) // unlike in toPixmap, we can't do QPixmap::fill for Qt::SolidPattern brush style, so we also process solid fills with fillRect here
       painter->fillRect(mViewport, mBackgroundBrush);
     draw(painter);
     setViewport(oldViewport);
@@ -17157,7 +17157,7 @@ QCPSelectionDecoratorBracket::~QCPSelectionDecoratorBracket()
 }
 
 /*!
-  Sets the pen that will be used to draw the brackets at the beginning and end of each selected
+  Sets the pen that will be used to process the brackets at the beginning and end of each selected
   data segment.
 */
 void QCPSelectionDecoratorBracket::setBracketPen(const QPen &pen)
@@ -17166,7 +17166,7 @@ void QCPSelectionDecoratorBracket::setBracketPen(const QPen &pen)
 }
 
 /*!
-  Sets the brush that will be used to draw the brackets at the beginning and end of each selected
+  Sets the brush that will be used to process the brackets at the beginning and end of each selected
   data segment.
 */
 void QCPSelectionDecoratorBracket::setBracketBrush(const QBrush &brush)
@@ -17283,7 +17283,7 @@ void QCPSelectionDecoratorBracket::drawBracket(QCPPainter *painter, int directio
   Draws the bracket decoration on the data points at the begin and end of each selected data
   segment given in \a seletion.
   
-  It uses the method \ref drawBracket to actually draw the shapes.
+  It uses the method \ref drawBracket to actually process the shapes.
   
   \seebaseclassmethod
 */
@@ -17307,7 +17307,7 @@ void QCPSelectionDecoratorBracket::drawDecoration(QCPPainter *painter, QCPDataSe
         openBracketAngle = getTangentAngle(interface1d, dataRange.begin(), openBracketDir);
         closeBracketAngle = getTangentAngle(interface1d, dataRange.end()-1, closeBracketDir);
       }
-      // draw opening bracket:
+      // process opening bracket:
       QTransform oldTransform = painter->transform();
       painter->setPen(mBracketPen);
       painter->setBrush(mBracketBrush);
@@ -17315,7 +17315,7 @@ void QCPSelectionDecoratorBracket::drawDecoration(QCPPainter *painter, QCPDataSe
       painter->rotate(openBracketAngle/M_PI*180.0);
       drawBracket(painter, openBracketDir);
       painter->setTransform(oldTransform);
-      // draw closing bracket:
+      // process closing bracket:
       painter->setPen(mBracketPen);
       painter->setBrush(mBracketBrush);
       painter->translate(closeBracketPos);
@@ -18417,11 +18417,11 @@ void QCPAxisRect::setRangeZoomFactor(double factor)
 */
 void QCPAxisRect::drawBackground(QCPPainter *painter)
 {
-  // draw background fill:
+  // process background fill:
   if (mBackgroundBrush != Qt::NoBrush)
     painter->fillRect(mRect, mBackgroundBrush);
   
-  // draw background pixmap (on top of fill, if brush specified):
+  // process background pixmap (on top of fill, if brush specified):
   if (!mBackgroundPixmap.isNull())
   {
     if (mBackgroundScaled)
@@ -18702,7 +18702,7 @@ void QCPAxisRect::wheelEvent(QWheelEvent *event)
   that's not even associated with a plottable).
 
   You must implement the following pure virtual functions:
-  \li \ref draw (from QCPLayerable)
+  \li \ref process (from QCPLayerable)
   
   You inherit the following members you may use:
   <table>
@@ -18765,7 +18765,7 @@ void QCPAbstractLegendItem::setTextColor(const QColor &color)
 }
 
 /*!
-  When this legend item is selected, \a font is used to draw generic text, instead of the normal
+  When this legend item is selected, \a font is used to process generic text, instead of the normal
   font set with \ref setFont.
   
   \see setFont, QCPLegend::setSelectedFont
@@ -18776,7 +18776,7 @@ void QCPAbstractLegendItem::setSelectedFont(const QFont &font)
 }
 
 /*!
-  When this legend item is selected, \a color is used to draw generic text, instead of the normal
+  When this legend item is selected, \a color is used to process generic text, instead of the normal
   color set with \ref setTextColor.
   
   \see setTextColor, QCPLegend::setSelectedTextColor
@@ -18913,7 +18913,7 @@ QCPPlottableLegendItem::QCPPlottableLegendItem(QCPLegend *parent, QCPAbstractPlo
 
 /*! \internal
   
-  Returns the pen that shall be used to draw the icon border, taking into account the selection
+  Returns the pen that shall be used to process the icon border, taking into account the selection
   state of this item.
 */
 QPen QCPPlottableLegendItem::getIconBorderPen() const
@@ -18923,7 +18923,7 @@ QPen QCPPlottableLegendItem::getIconBorderPen() const
 
 /*! \internal
   
-  Returns the text color that shall be used to draw text, taking into account the selection state
+  Returns the text color that shall be used to process text, taking into account the selection state
   of this item.
 */
 QColor QCPPlottableLegendItem::getTextColor() const
@@ -18933,7 +18933,7 @@ QColor QCPPlottableLegendItem::getTextColor() const
 
 /*! \internal
   
-  Returns the font that shall be used to draw text, taking into account the selection state of this
+  Returns the font that shall be used to process text, taking into account the selection state of this
   item.
 */
 QFont QCPPlottableLegendItem::getFont() const
@@ -18957,12 +18957,12 @@ void QCPPlottableLegendItem::draw(QCPPainter *painter)
   QRect iconRect(mRect.topLeft(), iconSize);
   int textHeight = qMax(textRect.height(), iconSize.height());  // if text has smaller height than icon, center text vertically in icon height, else align tops
   painter->drawText(mRect.x()+iconSize.width()+mParentLegend->iconTextPadding(), mRect.y(), textRect.width(), textHeight, Qt::TextDontClip, mPlottable->name());
-  // draw icon:
+  // process icon:
   painter->save();
   painter->setClipRect(iconRect, Qt::IntersectClip);
   mPlottable->drawLegendIcon(painter, iconRect);
   painter->restore();
-  // draw icon border:
+  // process icon border:
   if (getIconBorderPen().style() != Qt::NoPen)
   {
     painter->setPen(getIconBorderPen());
@@ -19121,7 +19121,7 @@ void QCPLegend::setBrush(const QBrush &brush)
 }
 
 /*!
-  Sets the default font of legend text. Legend items that draw text (e.g. the name of a graph) will
+  Sets the default font of legend text. Legend items that process text (e.g. the name of a graph) will
   use this font by default. However, a different font can be specified on a per-item-basis by
   accessing the specific legend item.
   
@@ -19140,7 +19140,7 @@ void QCPLegend::setFont(const QFont &font)
 }
 
 /*!
-  Sets the default color of legend text. Legend items that draw text (e.g. the name of a graph)
+  Sets the default color of legend text. Legend items that process text (e.g. the name of a graph)
   will use this color by default. However, a different colors can be specified on a per-item-basis
   by accessing the specific legend item.
   
@@ -19159,7 +19159,7 @@ void QCPLegend::setTextColor(const QColor &color)
 }
 
 /*!
-  Sets the size of legend icons. Legend items that draw an icon (e.g. a visual
+  Sets the size of legend icons. Legend items that process an icon (e.g. a visual
   representation of the graph) will use this size by default.
 */
 void QCPLegend::setIconSize(const QSize &size)
@@ -19177,7 +19177,7 @@ void QCPLegend::setIconSize(int width, int height)
 
 /*!
   Sets the horizontal space in pixels between the legend icon and the text next to it.
-  Legend items that draw an icon (e.g. a visual representation of the graph) and text (e.g. the
+  Legend items that process an icon (e.g. a visual representation of the graph) and text (e.g. the
   name of the graph) will use this space by default.
 */
 void QCPLegend::setIconTextPadding(int padding)
@@ -19186,7 +19186,7 @@ void QCPLegend::setIconTextPadding(int padding)
 }
 
 /*!
-  Sets the pen used to draw a border around each legend icon. Legend items that draw an
+  Sets the pen used to process a border around each legend icon. Legend items that process an
   icon (e.g. a visual representation of the graph) will use this pen by default.
   
   If no border is wanted, set this to \a Qt::NoPen.
@@ -19262,7 +19262,7 @@ void QCPLegend::setSelectedParts(const SelectableParts &selected)
 }
 
 /*!
-  When the legend box is selected, this pen is used to draw the border instead of the normal pen
+  When the legend box is selected, this pen is used to process the border instead of the normal pen
   set via \ref setBorderPen.
 
   \see setSelectedParts, setSelectableParts, setSelectedBrush
@@ -19273,7 +19273,7 @@ void QCPLegend::setSelectedBorderPen(const QPen &pen)
 }
 
 /*!
-  Sets the pen legend items will use to draw their icon borders, when they are selected.
+  Sets the pen legend items will use to process their icon borders, when they are selected.
 
   \see setSelectedParts, setSelectableParts, setSelectedFont
 */
@@ -19283,7 +19283,7 @@ void QCPLegend::setSelectedIconBorderPen(const QPen &pen)
 }
 
 /*!
-  When the legend box is selected, this brush is used to draw the legend background instead of the normal brush
+  When the legend box is selected, this brush is used to process the legend background instead of the normal brush
   set via \ref setBrush.
 
   \see setSelectedParts, setSelectableParts, setSelectedBorderPen
@@ -19498,7 +19498,7 @@ QList<QCPAbstractLegendItem *> QCPLegend::selectedItems() const
   A convenience function to easily set the QPainter::Antialiased hint on the provided \a painter
   before drawing main legend elements.
 
-  This is the antialiasing state the painter passed to the \ref draw method is in by default.
+  This is the antialiasing state the painter passed to the \ref process method is in by default.
   
   This function takes into account the local setting of the antialiasing flag as well as the
   overrides set with \ref QCustomPlot::setAntialiasedElements and \ref
@@ -19540,7 +19540,7 @@ QBrush QCPLegend::getBrush() const
 */
 void QCPLegend::draw(QCPPainter *painter)
 {
-  // draw background rect:
+  // process background rect:
   painter->setBrush(getBrush());
   painter->setPen(getBorderPen());
   painter->drawRect(mOuterRect);
@@ -19939,7 +19939,7 @@ void QCPTextElement::deselectEvent(bool *selectionStateChanged)
 /*!
   Returns 0.99*selectionTolerance (see \ref QCustomPlot::setSelectionTolerance) when \a pos is
   within the bounding box of the text element's text. Note that this bounding box is updated in the
-  draw call.
+  process call.
 
   If \a pos is outside the text's bounding box or if \a onlySelectable is true and this text
   element is not selectable (\ref setSelectable), returns -1.
@@ -20583,7 +20583,7 @@ QCPColorScaleAxisRectPrivate::QCPColorScaleAxisRectPrivate(QCPColorScale *parent
 /*! \internal
   
   Updates the color gradient image if necessary, by calling \ref updateGradientImage, then draws
-  it. Then the axes are drawn by calling the \ref QCPAxisRect::draw base class implementation.
+  it. Then the axes are drawn by calling the \ref QCPAxisRect::process base class implementation.
   
   \seebaseclassmethod
 */
@@ -20607,7 +20607,7 @@ void QCPColorScaleAxisRectPrivate::draw(QCPPainter *painter)
 /*! \internal
 
   Uses the current gradient of the parent \ref QCPColorScale (specified in the constructor) to
-  generate a gradient image. This gradient image will be used in the \ref draw method.
+  generate a gradient image. This gradient image will be used in the \ref process method.
 */
 void QCPColorScaleAxisRectPrivate::updateGradientImage()
 {
@@ -21112,7 +21112,7 @@ void QCPGraph::draw(QCPPainter *painter)
   
   QVector<QPointF> lines, scatters; // line and (if necessary) scatter pixel coordinates will be stored here while iterating over segments
   
-  // loop over and draw segments of unselected/selected data:
+  // loop over and process segments of unselected/selected data:
   QList<QCPDataRange> selectedSegments, unselectedSegments, allSegments;
   getDataSegments(selectedSegments, unselectedSegments);
   allSegments << unselectedSegments << selectedSegments;
@@ -21133,7 +21133,7 @@ void QCPGraph::draw(QCPPainter *painter)
     }
 #endif
     
-    // draw fill of graph:
+    // process fill of graph:
     if (isSelectedSegment && mSelectionDecorator)
       mSelectionDecorator->applyBrush(painter);
     else
@@ -21141,7 +21141,7 @@ void QCPGraph::draw(QCPPainter *painter)
     painter->setPen(Qt::NoPen);
     drawFill(painter, &lines);
     
-    // draw line:
+    // process line:
     if (mLineStyle != lsNone)
     {
       if (isSelectedSegment && mSelectionDecorator)
@@ -21155,7 +21155,7 @@ void QCPGraph::draw(QCPPainter *painter)
         drawLinePlot(painter, lines); // also step plots can be drawn as a line plot
     }
     
-    // draw scatters:
+    // process scatters:
     QCPScatterStyle finalScatterStyle = mScatterStyle;
     if (isSelectedSegment && mSelectionDecorator)
       finalScatterStyle = mSelectionDecorator->getFinalScatterStyle(mScatterStyle);
@@ -21166,7 +21166,7 @@ void QCPGraph::draw(QCPPainter *painter)
     }
   }
   
-  // draw other selection decoration that isn't just line/scatter pens and brushes:
+  // process other selection decoration that isn't just line/scatter pens and brushes:
   if (mSelectionDecorator)
     mSelectionDecorator->drawDecoration(painter, selection());
 }
@@ -21174,20 +21174,20 @@ void QCPGraph::draw(QCPPainter *painter)
 /* inherits documentation from base class */
 void QCPGraph::drawLegendIcon(QCPPainter *painter, const QRectF &rect) const
 {
-  // draw fill:
+  // process fill:
   if (mBrush.style() != Qt::NoBrush)
   {
     applyFillAntialiasingHint(painter);
     painter->fillRect(QRectF(rect.left(), rect.top()+rect.height()/2.0, rect.width(), rect.height()/3.0), mBrush);
   }
-  // draw line vertically centered:
+  // process line vertically centered:
   if (mLineStyle != lsNone)
   {
     applyDefaultAntialiasingHint(painter);
     painter->setPen(mPen);
     painter->drawLine(QLineF(rect.left(), rect.top()+rect.height()/2.0, rect.right()+5, rect.top()+rect.height()/2.0)); // +5 on x2 else last segment is missing from dashed/dotted pens
   }
-  // draw scatter symbol:
+  // process scatter symbol:
   if (!mScatterStyle.isNone())
   {
     applyScattersAntialiasingHint(painter);
@@ -21213,7 +21213,7 @@ void QCPGraph::drawLegendIcon(QCPPainter *painter, const QRectF &rect) const
   according to the line style of the graph.
 
   \a lines will be filled with points in pixel coordinates, that can be drawn with the according
-  draw functions like \ref drawLinePlot and \ref drawImpulsePlot. The points returned in \a lines
+  process functions like \ref drawLinePlot and \ref drawImpulsePlot. The points returned in \a lines
   aren't necessarily the original data points. For example, step line styles require additional
   points to form the steps when drawn. If the line style of the graph is \ref lsNone, the \a
   lines vector will be empty.
@@ -21576,12 +21576,12 @@ void QCPGraph::drawFill(QCPPainter *painter, QVector<QPointF> *lines) const
   const QVector<QCPDataRange> segments = getNonNanSegments(lines, keyAxis()->orientation());
   if (!mChannelFillGraph)
   {
-    // draw base fill under graph, fill goes all the way to the zero-value-line:
+    // process base fill under graph, fill goes all the way to the zero-value-line:
     foreach (QCPDataRange segment, segments)
       painter->drawPolygon(getFillPolygon(lines, segment));
   } else
   {
-    // draw fill between this graph and mChannelFillGraph:
+    // process fill between this graph and mChannelFillGraph:
     QVector<QPointF> otherLines;
     mChannelFillGraph->getLines(&otherLines, QCPDataRange(0, mChannelFillGraph->dataCount()));
     if (!otherLines.isEmpty())
@@ -22135,7 +22135,7 @@ QPointF QCPGraph::getFillBasePoint(QPointF matchingDataPoint) const
     }
   } else // valueAxis->mScaleType == QCPAxis::stLogarithmic
   {
-    // In logarithmic scaling we can't just draw to value 0 so we just fill all the way
+    // In logarithmic scaling we can't just process to value 0 so we just fill all the way
     // to the axis which is in the direction towards 0
     if (keyAxis->orientation() == Qt::Vertical)
     {
@@ -22875,7 +22875,7 @@ void QCPCurve::draw(QCPPainter *painter)
   // allocate line vector:
   QVector<QPointF> lines, scatters;
   
-  // loop over and draw segments of unselected/selected data:
+  // loop over and process segments of unselected/selected data:
   QList<QCPDataRange> selectedSegments, unselectedSegments, allSegments;
   getDataSegments(selectedSegments, unselectedSegments);
   allSegments << unselectedSegments << selectedSegments;
@@ -22901,7 +22901,7 @@ void QCPCurve::draw(QCPPainter *painter)
     }
   #endif
     
-    // draw curve fill:
+    // process curve fill:
     applyFillAntialiasingHint(painter);
     if (isSelectedSegment && mSelectionDecorator)
       mSelectionDecorator->applyBrush(painter);
@@ -22911,7 +22911,7 @@ void QCPCurve::draw(QCPPainter *painter)
     if (painter->brush().style() != Qt::NoBrush && painter->brush().color().alpha() != 0)
       painter->drawPolygon(QPolygonF(lines));
     
-    // draw curve line:
+    // process curve line:
     if (mLineStyle != lsNone)
     {
       painter->setPen(finalCurvePen);
@@ -22919,7 +22919,7 @@ void QCPCurve::draw(QCPPainter *painter)
       drawCurveLine(painter, lines);
     }
     
-    // draw scatters:
+    // process scatters:
     QCPScatterStyle finalScatterStyle = mScatterStyle;
     if (isSelectedSegment && mSelectionDecorator)
       finalScatterStyle = mSelectionDecorator->getFinalScatterStyle(mScatterStyle);
@@ -22930,7 +22930,7 @@ void QCPCurve::draw(QCPPainter *painter)
     }
   }
   
-  // draw other selection decoration that isn't just line/scatter pens and brushes:
+  // process other selection decoration that isn't just line/scatter pens and brushes:
   if (mSelectionDecorator)
     mSelectionDecorator->drawDecoration(painter, selection());
 }
@@ -22938,20 +22938,20 @@ void QCPCurve::draw(QCPPainter *painter)
 /* inherits documentation from base class */
 void QCPCurve::drawLegendIcon(QCPPainter *painter, const QRectF &rect) const
 {
-  // draw fill:
+  // process fill:
   if (mBrush.style() != Qt::NoBrush)
   {
     applyFillAntialiasingHint(painter);
     painter->fillRect(QRectF(rect.left(), rect.top()+rect.height()/2.0, rect.width(), rect.height()/3.0), mBrush);
   }
-  // draw line vertically centered:
+  // process line vertically centered:
   if (mLineStyle != lsNone)
   {
     applyDefaultAntialiasingHint(painter);
     painter->setPen(mPen);
     painter->drawLine(QLineF(rect.left(), rect.top()+rect.height()/2.0, rect.right()+5, rect.top()+rect.height()/2.0)); // +5 on x2 else last segment is missing from dashed/dotted pens
   }
-  // draw scatter symbol:
+  // process scatter symbol:
   if (!mScatterStyle.isNone())
   {
     applyScattersAntialiasingHint(painter);
@@ -22994,7 +22994,7 @@ void QCPCurve::drawCurveLine(QCPPainter *painter, const QVector<QPointF> &lines)
 */
 void QCPCurve::drawScatterPlot(QCPPainter *painter, const QVector<QPointF> &points, const QCPScatterStyle &style) const
 {
-  // draw scatter point symbols:
+  // process scatter point symbols:
   applyScattersAntialiasingHint(painter);
   style.applyTo(painter, mPen);
   foreach (const QPointF &point, points)
@@ -23004,7 +23004,7 @@ void QCPCurve::drawScatterPlot(QCPPainter *painter, const QVector<QPointF> &poin
 
 /*! \internal
 
-  Called by \ref draw to generate points in pixel coordinates which represent the line of the
+  Called by \ref process to generate points in pixel coordinates which represent the line of the
   curve.
 
   Line segments that aren't visible in the current axis rect are handled in an optimized way. They
@@ -23021,7 +23021,7 @@ void QCPCurve::drawScatterPlot(QCPPainter *painter, const QVector<QPointF> &poin
   function to check for valid indices in \a dataRange, e.g. when extending ranges coming from \ref
   getDataSegments.
 
-  \a penWidth specifies the pen width that will be used to later draw the lines generated by this
+  \a penWidth specifies the pen width that will be used to later process the lines generated by this
   function. This is needed here to calculate an accordingly wider margin around the axis rect when
   performing the line optimization.
 
@@ -23115,7 +23115,7 @@ void QCPCurve::getCurveLines(QVector<QPointF> *lines, const QCPDataRange &dataRa
 
 /*! \internal
 
-  Called by \ref draw to generate points in pixel coordinates which represent the scatters of the
+  Called by \ref process to generate points in pixel coordinates which represent the scatters of the
   curve. If a scatter skip is configured (\ref setScatterSkip), the returned points are accordingly
   sparser.
 
@@ -23127,11 +23127,11 @@ void QCPCurve::getCurveLines(QVector<QPointF> *lines, const QCPDataRange &dataRa
   \a dataRange specifies the beginning and ending data indices that will be taken into account for
   conversion.
 
-  \a scatterWidth specifies the scatter width that will be used to later draw the scatters at pixel
+  \a scatterWidth specifies the scatter width that will be used to later process the scatters at pixel
   coordinates generated by this function. This is needed here to calculate an accordingly wider
   margin around the axis rect when performing the data point reduction.
 
-  \see draw, drawScatterPlot
+  \see process, drawScatterPlot
 */
 void QCPCurve::getScatters(QVector<QPointF> *scatters, const QCPDataRange &dataRange, double scatterWidth) const
 {
@@ -23730,7 +23730,7 @@ bool QCPCurve::getTraverse(double prevKey, double prevValue, double key, double 
     intersections = QList<QPointF>() << pv1 << pv2;
   } else if (intersections.size() != 2)
   {
-    // one or even zero points found (shouldn't happen unless line perfectly tangent to corner), no need to draw segment
+    // one or even zero points found (shouldn't happen unless line perfectly tangent to corner), no need to process segment
     return false;
   }
   
@@ -24812,7 +24812,7 @@ void QCPBars::draw(QCPPainter *painter)
   QCPBarsDataContainer::const_iterator visibleBegin, visibleEnd;
   getVisibleDataBounds(visibleBegin, visibleEnd);
   
-  // loop over and draw segments of unselected/selected data:
+  // loop over and process segments of unselected/selected data:
   QList<QCPDataRange> selectedSegments, unselectedSegments, allSegments;
   getDataSegments(selectedSegments, unselectedSegments);
   allSegments << unselectedSegments << selectedSegments;
@@ -24832,7 +24832,7 @@ void QCPBars::draw(QCPPainter *painter)
       if (QCP::isInvalidData(it->key, it->value))
         qDebug() << Q_FUNC_INFO << "Data point at" << it->key << "of drawn range invalid." << "Plottable name:" << name();
 #endif
-      // draw bar:
+      // process bar:
       if (isSelectedSegment && mSelectionDecorator)
       {
         mSelectionDecorator->applyBrush(painter);
@@ -24847,7 +24847,7 @@ void QCPBars::draw(QCPPainter *painter)
     }
   }
   
-  // draw other selection decoration that isn't just line/scatter pens and brushes:
+  // process other selection decoration that isn't just line/scatter pens and brushes:
   if (mSelectionDecorator)
     mSelectionDecorator->drawDecoration(painter, selection());
 }
@@ -24855,7 +24855,7 @@ void QCPBars::draw(QCPPainter *painter)
 /* inherits documentation from base class */
 void QCPBars::drawLegendIcon(QCPPainter *painter, const QRectF &rect) const
 {
-  // draw filled rect:
+  // process filled rect:
   applyDefaultAntialiasingHint(painter);
   painter->setBrush(mBrush);
   painter->setPen(mPen);
@@ -24866,7 +24866,7 @@ void QCPBars::drawLegendIcon(QCPPainter *painter, const QRectF &rect) const
 
 /*!  \internal
   
-  called by \ref draw to determine which data (key) range is visible at the current key axis range
+  called by \ref process to determine which data (key) range is visible at the current key axis range
   setting, so only that needs to be processed. It also takes into account the bar width.
   
   \a begin returns an iterator to the lowest data point that needs to be taken into account when
@@ -25586,7 +25586,7 @@ void QCPStatisticalBox::draw(QCPPainter *painter)
   QCPStatisticalBoxDataContainer::const_iterator visibleBegin, visibleEnd;
   getVisibleDataBounds(visibleBegin, visibleEnd);
   
-  // loop over and draw segments of unselected/selected data:
+  // loop over and process segments of unselected/selected data:
   QList<QCPDataRange> selectedSegments, unselectedSegments, allSegments;
   getDataSegments(selectedSegments, unselectedSegments);
   allSegments << unselectedSegments << selectedSegments;
@@ -25628,7 +25628,7 @@ void QCPStatisticalBox::draw(QCPPainter *painter)
     }
   }
   
-  // draw other selection decoration that isn't just line/scatter pens and brushes:
+  // process other selection decoration that isn't just line/scatter pens and brushes:
   if (mSelectionDecorator)
     mSelectionDecorator->drawDecoration(painter, selection());
 }
@@ -25636,7 +25636,7 @@ void QCPStatisticalBox::draw(QCPPainter *painter)
 /* inherits documentation from base class */
 void QCPStatisticalBox::drawLegendIcon(QCPPainter *painter, const QRectF &rect) const
 {
-  // draw filled rect:
+  // process filled rect:
   applyDefaultAntialiasingHint(painter);
   painter->setPen(mPen);
   painter->setBrush(mBrush);
@@ -25655,23 +25655,23 @@ void QCPStatisticalBox::drawLegendIcon(QCPPainter *painter, const QRectF &rect) 
 */
 void QCPStatisticalBox::drawStatisticalBox(QCPPainter *painter, QCPStatisticalBoxDataContainer::const_iterator it, const QCPScatterStyle &outlierStyle) const
 {
-  // draw quartile box:
+  // process quartile box:
   applyDefaultAntialiasingHint(painter);
   const QRectF quartileBox = getQuartileBox(it);
   painter->drawRect(quartileBox);
-  // draw median line with cliprect set to quartile box:
+  // process median line with cliprect set to quartile box:
   painter->save();
   painter->setClipRect(quartileBox, Qt::IntersectClip);
   painter->setPen(mMedianPen);
   painter->drawLine(QLineF(coordsToPixels(it->key-mWidth*0.5, it->median), coordsToPixels(it->key+mWidth*0.5, it->median)));
   painter->restore();
-  // draw whisker lines:
+  // process whisker lines:
   applyAntialiasingHint(painter, mWhiskerAntialiased, QCP::aePlottables);
   painter->setPen(mWhiskerPen);
   painter->drawLines(getWhiskerBackboneLines(it));
   painter->setPen(mWhiskerBarPen);
   painter->drawLines(getWhiskerBarLines(it));
-  // draw outliers:
+  // process outliers:
   applyScattersAntialiasingHint(painter);
   outlierStyle.applyTo(painter, mPen);
   for (int i=0; i<it->outliers.size(); ++i)
@@ -25680,7 +25680,7 @@ void QCPStatisticalBox::drawStatisticalBox(QCPPainter *painter, QCPStatisticalBo
 
 /*!  \internal
   
-  called by \ref draw to determine which data (key) range is visible at the current key axis range
+  called by \ref process to determine which data (key) range is visible at the current key axis range
   setting, so only that needs to be processed. It also takes into account the bar width.
   
   \a begin returns an iterator to the lowest data point that needs to be taken into account when
@@ -26618,7 +26618,7 @@ void QCPColorMap::rescaleDataRange(bool recalculateDataBounds)
 void QCPColorMap::updateLegendIcon(Qt::TransformationMode transformMode, const QSize &thumbSize)
 {
   if (mMapImage.isNull() && !data()->isEmpty())
-    updateMapImage(); // try to update map image if it's null (happens if no draw has happened yet)
+    updateMapImage(); // try to update map image if it's null (happens if no process has happened yet)
   
   if (!mMapImage.isNull()) // might still be null, e.g. if data is empty, so check here again
   {
@@ -26709,7 +26709,7 @@ QCPRange QCPColorMap::getValueRange(bool &foundRange, QCP::SignDomain inSignDoma
   Updates the internal map image buffer by going through the internal \ref QCPColorMapData and
   turning the data values into color pixels with \ref QCPColorGradient::colorize.
   
-  This method is called by \ref QCPColorMap::draw if either the data has been modified or the map image
+  This method is called by \ref QCPColorMap::process if either the data has been modified or the map image
   has been invalidated for a different reason (e.g. a change of the data range with \ref
   setDataRange).
   
@@ -26857,7 +26857,7 @@ void QCPColorMap::draw(QCPPainter *painter)
     localPainter->setClipRegion(clipBackup);
   localPainter->setRenderHint(QPainter::SmoothPixmapTransform, smoothBackup);
   
-  if (useBuffer) // localPainter painted to mapBuffer, so now draw buffer with original painter
+  if (useBuffer) // localPainter painted to mapBuffer, so now process buffer with original painter
   {
     delete localPainter;
     painter->drawPixmap(mapBufferTarget.toRect(), mapBuffer);
@@ -26868,7 +26868,7 @@ void QCPColorMap::draw(QCPPainter *painter)
 void QCPColorMap::drawLegendIcon(QCPPainter *painter, const QRectF &rect) const
 {
   applyDefaultAntialiasingHint(painter);
-  // draw map thumbnail:
+  // process map thumbnail:
   if (!mLegendIcon.isNull())
   {
     QPixmap scaledIcon = mLegendIcon.scaled(rect.size().toSize(), Qt::KeepAspectRatio, Qt::FastTransformation);
@@ -26877,7 +26877,7 @@ void QCPColorMap::drawLegendIcon(QCPPainter *painter, const QRectF &rect) const
     painter->drawPixmap(iconRect.topLeft(), scaledIcon);
   }
   /*
-  // draw frame:
+  // process frame:
   painter->setBrush(Qt::NoBrush);
   painter->setPen(Qt::black);
   painter->drawRect(rect.adjusted(1, 1, 0, 0));
@@ -27150,7 +27150,7 @@ void QCPFinancial::setWidthType(QCPFinancial::WidthType widthType)
 
 /*!
   Sets whether this chart shall contrast positive from negative trends per data point by using two
-  separate colors to draw the respective bars/candlesticks.
+  separate colors to process the respective bars/candlesticks.
   
   If \a twoColored is false, the normal plottable's pen and brush are used (\ref setPen, \ref
   setBrush).
@@ -27163,7 +27163,7 @@ void QCPFinancial::setTwoColored(bool twoColored)
 }
 
 /*!
-  If \ref setTwoColored is set to true, this function controls the brush that is used to draw fills
+  If \ref setTwoColored is set to true, this function controls the brush that is used to process fills
   of data points with a positive trend (i.e. bars/candlesticks with close >= open).
   
   If \a twoColored is false, the normal plottable's pen and brush are used (\ref setPen, \ref
@@ -27177,7 +27177,7 @@ void QCPFinancial::setBrushPositive(const QBrush &brush)
 }
 
 /*!
-  If \ref setTwoColored is set to true, this function controls the brush that is used to draw fills
+  If \ref setTwoColored is set to true, this function controls the brush that is used to process fills
   of data points with a negative trend (i.e. bars/candlesticks with close < open).
   
   If \a twoColored is false, the normal plottable's pen and brush are used (\ref setPen, \ref
@@ -27191,7 +27191,7 @@ void QCPFinancial::setBrushNegative(const QBrush &brush)
 }
 
 /*!
-  If \ref setTwoColored is set to true, this function controls the pen that is used to draw
+  If \ref setTwoColored is set to true, this function controls the pen that is used to process
   outlines of data points with a positive trend (i.e. bars/candlesticks with close >= open).
   
   If \a twoColored is false, the normal plottable's pen and brush are used (\ref setPen, \ref
@@ -27205,7 +27205,7 @@ void QCPFinancial::setPenPositive(const QPen &pen)
 }
 
 /*!
-  If \ref setTwoColored is set to true, this function controls the pen that is used to draw
+  If \ref setTwoColored is set to true, this function controls the pen that is used to process
   outlines of data points with a negative trend (i.e. bars/candlesticks with close < open).
   
   If \a twoColored is false, the normal plottable's pen and brush are used (\ref setPen, \ref
@@ -27415,7 +27415,7 @@ void QCPFinancial::draw(QCPPainter *painter)
   QCPFinancialDataContainer::const_iterator visibleBegin, visibleEnd;
   getVisibleDataBounds(visibleBegin, visibleEnd);
   
-  // loop over and draw segments of unselected/selected data:
+  // loop over and process segments of unselected/selected data:
   QList<QCPDataRange> selectedSegments, unselectedSegments, allSegments;
   getDataSegments(selectedSegments, unselectedSegments);
   allSegments << unselectedSegments << selectedSegments;
@@ -27428,7 +27428,7 @@ void QCPFinancial::draw(QCPPainter *painter)
     if (begin == end)
       continue;
     
-    // draw data segment according to configured style:
+    // process data segment according to configured style:
     switch (mChartStyle)
     {
       case QCPFinancial::csOhlc:
@@ -27438,7 +27438,7 @@ void QCPFinancial::draw(QCPPainter *painter)
     }
   }
   
-  // draw other selection decoration that isn't just line/scatter pens and brushes:
+  // process other selection decoration that isn't just line/scatter pens and brushes:
   if (mSelectionDecorator)
     mSelectionDecorator->drawDecoration(painter, selection());
 }
@@ -27451,14 +27451,14 @@ void QCPFinancial::drawLegendIcon(QCPPainter *painter, const QRectF &rect) const
   {
     if (mTwoColored)
     {
-      // draw upper left half icon with positive color:
+      // process upper left half icon with positive color:
       painter->setBrush(mBrushPositive);
       painter->setPen(mPenPositive);
       painter->setClipRegion(QRegion(QPolygon() << rect.bottomLeft().toPoint() << rect.topRight().toPoint() << rect.topLeft().toPoint()));
       painter->drawLine(QLineF(0, rect.height()*0.5, rect.width(), rect.height()*0.5).translated(rect.topLeft()));
       painter->drawLine(QLineF(rect.width()*0.2, rect.height()*0.3, rect.width()*0.2, rect.height()*0.5).translated(rect.topLeft()));
       painter->drawLine(QLineF(rect.width()*0.8, rect.height()*0.5, rect.width()*0.8, rect.height()*0.7).translated(rect.topLeft()));
-      // draw bottom right half icon with negative color:
+      // process bottom right half icon with negative color:
       painter->setBrush(mBrushNegative);
       painter->setPen(mPenNegative);
       painter->setClipRegion(QRegion(QPolygon() << rect.bottomLeft().toPoint() << rect.topRight().toPoint() << rect.bottomRight().toPoint()));
@@ -27477,14 +27477,14 @@ void QCPFinancial::drawLegendIcon(QCPPainter *painter, const QRectF &rect) const
   {
     if (mTwoColored)
     {
-      // draw upper left half icon with positive color:
+      // process upper left half icon with positive color:
       painter->setBrush(mBrushPositive);
       painter->setPen(mPenPositive);
       painter->setClipRegion(QRegion(QPolygon() << rect.bottomLeft().toPoint() << rect.topRight().toPoint() << rect.topLeft().toPoint()));
       painter->drawLine(QLineF(0, rect.height()*0.5, rect.width()*0.25, rect.height()*0.5).translated(rect.topLeft()));
       painter->drawLine(QLineF(rect.width()*0.75, rect.height()*0.5, rect.width(), rect.height()*0.5).translated(rect.topLeft()));
       painter->drawRect(QRectF(rect.width()*0.25, rect.height()*0.25, rect.width()*0.5, rect.height()*0.5).translated(rect.topLeft()));
-      // draw bottom right half icon with negative color:
+      // process bottom right half icon with negative color:
       painter->setBrush(mBrushNegative);
       painter->setPen(mPenNegative);
       painter->setClipRegion(QRegion(QPolygon() << rect.bottomLeft().toPoint() << rect.topRight().toPoint() << rect.bottomRight().toPoint()));
@@ -27506,7 +27506,7 @@ void QCPFinancial::drawLegendIcon(QCPPainter *painter, const QRectF &rect) const
   
   Draws the data from \a begin to \a end-1 as OHLC bars with the provided \a painter.
 
-  This method is a helper function for \ref draw. It is used when the chart style is \ref csOhlc.
+  This method is a helper function for \ref process. It is used when the chart style is \ref csOhlc.
 */
 void QCPFinancial::drawOhlcPlot(QCPPainter *painter, const QCPFinancialDataContainer::const_iterator &begin, const QCPFinancialDataContainer::const_iterator &end, bool isSelected)
 {
@@ -27527,12 +27527,12 @@ void QCPFinancial::drawOhlcPlot(QCPPainter *painter, const QCPFinancialDataConta
       double keyPixel = keyAxis->coordToPixel(it->key);
       double openPixel = valueAxis->coordToPixel(it->open);
       double closePixel = valueAxis->coordToPixel(it->close);
-      // draw backbone:
+      // process backbone:
       painter->drawLine(QPointF(keyPixel, valueAxis->coordToPixel(it->high)), QPointF(keyPixel, valueAxis->coordToPixel(it->low)));
-      // draw open:
+      // process open:
       double pixelWidth = getPixelWidth(it->key, keyPixel); // sign of this makes sure open/close are on correct sides
       painter->drawLine(QPointF(keyPixel-pixelWidth, openPixel), QPointF(keyPixel, openPixel));
-      // draw close:
+      // process close:
       painter->drawLine(QPointF(keyPixel, closePixel), QPointF(keyPixel+pixelWidth, closePixel));
     }
   } else
@@ -27548,12 +27548,12 @@ void QCPFinancial::drawOhlcPlot(QCPPainter *painter, const QCPFinancialDataConta
       double keyPixel = keyAxis->coordToPixel(it->key);
       double openPixel = valueAxis->coordToPixel(it->open);
       double closePixel = valueAxis->coordToPixel(it->close);
-      // draw backbone:
+      // process backbone:
       painter->drawLine(QPointF(valueAxis->coordToPixel(it->high), keyPixel), QPointF(valueAxis->coordToPixel(it->low), keyPixel));
-      // draw open:
+      // process open:
       double pixelWidth = getPixelWidth(it->key, keyPixel); // sign of this makes sure open/close are on correct sides
       painter->drawLine(QPointF(openPixel, keyPixel-pixelWidth), QPointF(openPixel, keyPixel));
-      // draw close:
+      // process close:
       painter->drawLine(QPointF(closePixel, keyPixel), QPointF(closePixel, keyPixel+pixelWidth));
     }
   }
@@ -27563,7 +27563,7 @@ void QCPFinancial::drawOhlcPlot(QCPPainter *painter, const QCPFinancialDataConta
   
   Draws the data from \a begin to \a end-1 as Candlesticks with the provided \a painter.
 
-  This method is a helper function for \ref draw. It is used when the chart style is \ref csCandlestick.
+  This method is a helper function for \ref process. It is used when the chart style is \ref csCandlestick.
 */
 void QCPFinancial::drawCandlestickPlot(QCPPainter *painter, const QCPFinancialDataContainer::const_iterator &begin, const QCPFinancialDataContainer::const_iterator &end, bool isSelected)
 {
@@ -27591,11 +27591,11 @@ void QCPFinancial::drawCandlestickPlot(QCPPainter *painter, const QCPFinancialDa
       double keyPixel = keyAxis->coordToPixel(it->key);
       double openPixel = valueAxis->coordToPixel(it->open);
       double closePixel = valueAxis->coordToPixel(it->close);
-      // draw high:
+      // process high:
       painter->drawLine(QPointF(keyPixel, valueAxis->coordToPixel(it->high)), QPointF(keyPixel, valueAxis->coordToPixel(qMax(it->open, it->close))));
-      // draw low:
+      // process low:
       painter->drawLine(QPointF(keyPixel, valueAxis->coordToPixel(it->low)), QPointF(keyPixel, valueAxis->coordToPixel(qMin(it->open, it->close))));
-      // draw open-close box:
+      // process open-close box:
       double pixelWidth = getPixelWidth(it->key, keyPixel);
       painter->drawRect(QRectF(QPointF(keyPixel-pixelWidth, closePixel), QPointF(keyPixel+pixelWidth, openPixel)));
     }
@@ -27619,11 +27619,11 @@ void QCPFinancial::drawCandlestickPlot(QCPPainter *painter, const QCPFinancialDa
       double keyPixel = keyAxis->coordToPixel(it->key);
       double openPixel = valueAxis->coordToPixel(it->open);
       double closePixel = valueAxis->coordToPixel(it->close);
-      // draw high:
+      // process high:
       painter->drawLine(QPointF(valueAxis->coordToPixel(it->high), keyPixel), QPointF(valueAxis->coordToPixel(qMax(it->open, it->close)), keyPixel));
-      // draw low:
+      // process low:
       painter->drawLine(QPointF(valueAxis->coordToPixel(it->low), keyPixel), QPointF(valueAxis->coordToPixel(qMin(it->open, it->close)), keyPixel));
-      // draw open-close box:
+      // process open-close box:
       double pixelWidth = getPixelWidth(it->key, keyPixel);
       painter->drawRect(QRectF(QPointF(closePixel, keyPixel-pixelWidth), QPointF(openPixel, keyPixel+pixelWidth)));
     }
@@ -28345,7 +28345,7 @@ void QCPErrorBars::draw(QCPPainter *painter)
   
   applyDefaultAntialiasingHint(painter);
   painter->setBrush(Qt::NoBrush);
-  // loop over and draw segments of unselected/selected data:
+  // loop over and process segments of unselected/selected data:
   QList<QCPDataRange> selectedSegments, unselectedSegments, allSegments;
   getDataSegments(selectedSegments, unselectedSegments);
   allSegments << unselectedSegments << selectedSegments;
@@ -28379,7 +28379,7 @@ void QCPErrorBars::draw(QCPPainter *painter)
     painter->drawLines(whiskers);
   }
   
-  // draw other selection decoration that isn't just line/scatter pens and brushes:
+  // process other selection decoration that isn't just line/scatter pens and brushes:
   if (mSelectionDecorator)
     mSelectionDecorator->drawDecoration(painter, selection());
 }
@@ -28641,7 +28641,7 @@ void QCPErrorBars::getErrorBarLines(QCPErrorBarsDataContainer::const_iterator it
 
   If the plottable's sort key is not equal to the main key, this method returns the full data
   range, only restricted by \a rangeRestriction. Drawing optimization then has to be done on a
-  point-by-point basis in the \ref draw method.
+  point-by-point basis in the \ref process method.
 */
 void QCPErrorBars::getVisibleDataBounds(QCPErrorBarsDataContainer::const_iterator &begin, QCPErrorBarsDataContainer::const_iterator &end, const QCPDataRange &rangeRestriction) const
 {
@@ -28854,7 +28854,7 @@ QCPItemStraightLine::~QCPItemStraightLine()
 }
 
 /*!
-  Sets the pen that will be used to draw the line
+  Sets the pen that will be used to process the line
   
   \see setSelectedPen
 */
@@ -28864,7 +28864,7 @@ void QCPItemStraightLine::setPen(const QPen &pen)
 }
 
 /*!
-  Sets the pen that will be used to draw the line when selected
+  Sets the pen that will be used to process the line when selected
   
   \see setPen, setSelected
 */
@@ -28904,7 +28904,7 @@ void QCPItemStraightLine::draw(QCPPainter *painter)
   Returns the section of the straight line defined by \a base and direction vector \a
   vec, that is visible in the specified \a rect.
   
-  This is a helper function for \ref draw.
+  This is a helper function for \ref process.
 */
 QLineF QCPItemStraightLine::getRectClippedStraightLine(const QCPVector2D &base, const QCPVector2D &vec, const QRect &rect) const
 {
@@ -29037,7 +29037,7 @@ QCPItemLine::~QCPItemLine()
 }
 
 /*!
-  Sets the pen that will be used to draw the line
+  Sets the pen that will be used to process the line
   
   \see setSelectedPen
 */
@@ -29047,7 +29047,7 @@ void QCPItemLine::setPen(const QPen &pen)
 }
 
 /*!
-  Sets the pen that will be used to draw the line when selected
+  Sets the pen that will be used to process the line when selected
   
   \see setPen, setSelected
 */
@@ -29121,7 +29121,7 @@ void QCPItemLine::draw(QCPPainter *painter)
   Returns the section of the line defined by \a start and \a end, that is visible in the specified
   \a rect.
   
-  This is a helper function for \ref draw.
+  This is a helper function for \ref process.
 */
 QLineF QCPItemLine::getRectClippedLine(const QCPVector2D &start, const QCPVector2D &end, const QRect &rect) const
 {
@@ -29279,7 +29279,7 @@ QCPItemCurve::~QCPItemCurve()
 }
 
 /*!
-  Sets the pen that will be used to draw the line
+  Sets the pen that will be used to process the line
   
   \see setSelectedPen
 */
@@ -29289,7 +29289,7 @@ void QCPItemCurve::setPen(const QPen &pen)
 }
 
 /*!
-  Sets the pen that will be used to draw the line when selected
+  Sets the pen that will be used to process the line when selected
   
   \see setPen, setSelected
 */
@@ -29443,7 +29443,7 @@ QCPItemRect::~QCPItemRect()
 }
 
 /*!
-  Sets the pen that will be used to draw the line of the rectangle
+  Sets the pen that will be used to process the line of the rectangle
   
   \see setSelectedPen, setBrush
 */
@@ -29453,7 +29453,7 @@ void QCPItemRect::setPen(const QPen &pen)
 }
 
 /*!
-  Sets the pen that will be used to draw the line of the rectangle when selected
+  Sets the pen that will be used to process the line of the rectangle when selected
   
   \see setPen, setSelected
 */
@@ -29506,7 +29506,7 @@ void QCPItemRect::draw(QCPPainter *painter)
   QRectF rect = QRectF(p1, p2).normalized();
   double clipPad = mainPen().widthF();
   QRectF boundingRect = rect.adjusted(-clipPad, -clipPad, clipPad, clipPad);
-  if (boundingRect.intersects(clipRect())) // only draw if bounding rect of rect item is visible in cliprect
+  if (boundingRect.intersects(clipRect())) // only process if bounding rect of rect item is visible in cliprect
   {
     painter->setPen(mainPen());
     painter->setBrush(mainBrush());
@@ -29628,7 +29628,7 @@ void QCPItemText::setSelectedColor(const QColor &color)
 }
 
 /*!
-  Sets the pen that will be used do draw a rectangular border around the text. To disable the
+  Sets the pen that will be used do process a rectangular border around the text. To disable the
   border, set \a pen to Qt::NoPen.
   
   \see setSelectedPen, setBrush, setPadding
@@ -29639,7 +29639,7 @@ void QCPItemText::setPen(const QPen &pen)
 }
 
 /*!
-  Sets the pen that will be used do draw a rectangular border around the text, when the item is
+  Sets the pen that will be used do process a rectangular border around the text, when the item is
   selected. To disable the border, set \a pen to Qt::NoPen.
   
   \see setPen
@@ -29804,7 +29804,7 @@ void QCPItemText::draw(QCPPainter *painter)
 /* inherits documentation from base class */
 QPointF QCPItemText::anchorPixelPosition(int anchorId) const
 {
-  // get actual rect points (pretty much copied from draw function):
+  // get actual rect points (pretty much copied from process function):
   QPointF pos(position->pixelPosition());
   QTransform transform;
   transform.translate(pos.x(), pos.y());
@@ -29951,7 +29951,7 @@ QCPItemEllipse::~QCPItemEllipse()
 }
 
 /*!
-  Sets the pen that will be used to draw the line of the ellipse
+  Sets the pen that will be used to process the line of the ellipse
   
   \see setSelectedPen, setBrush
 */
@@ -29961,7 +29961,7 @@ void QCPItemEllipse::setPen(const QPen &pen)
 }
 
 /*!
-  Sets the pen that will be used to draw the line of the ellipse when selected
+  Sets the pen that will be used to process the line of the ellipse when selected
   
   \see setPen, setSelected
 */
@@ -30029,7 +30029,7 @@ void QCPItemEllipse::draw(QCPPainter *painter)
   QRectF ellipseRect = QRectF(p1, p2).normalized();
   const int clipEnlarge = qCeil(mainPen().widthF());
   QRect clip = clipRect().adjusted(-clipEnlarge, -clipEnlarge, clipEnlarge, clipEnlarge);
-  if (ellipseRect.intersects(clip)) // only draw if bounding rect of ellipse is visible in cliprect
+  if (ellipseRect.intersects(clip)) // only process if bounding rect of ellipse is visible in cliprect
   {
     painter->setPen(mainPen());
     painter->setBrush(mainBrush());
@@ -30168,7 +30168,7 @@ void QCPItemPixmap::setScaled(bool scaled, Qt::AspectRatioMode aspectRatioMode, 
 }
 
 /*!
-  Sets the pen that will be used to draw a border around the pixmap.
+  Sets the pen that will be used to process a border around the pixmap.
   
   \see setSelectedPen, setBrush
 */
@@ -30178,7 +30178,7 @@ void QCPItemPixmap::setPen(const QPen &pen)
 }
 
 /*!
-  Sets the pen that will be used to draw a border around the pixmap when selected
+  Sets the pen that will be used to process a border around the pixmap when selected
   
   \see setPen, setSelected
 */
@@ -30254,7 +30254,7 @@ QPointF QCPItemPixmap::anchorPixelPosition(int anchorId) const
   bottomRight.)
   
   This function only creates the scaled pixmap when the buffered pixmap has a different size than
-  the expected result, so calling this function repeatedly, e.g. in the \ref draw function, does
+  the expected result, so calling this function repeatedly, e.g. in the \ref process function, does
   not cause expensive rescaling every time.
   
   If scaling is disabled, sets mScaledPixmap to a null QPixmap.
@@ -30426,7 +30426,7 @@ QCPItemTracer::~QCPItemTracer()
 }
 
 /*!
-  Sets the pen that will be used to draw the line of the tracer
+  Sets the pen that will be used to process the line of the tracer
   
   \see setSelectedPen, setBrush
 */
@@ -30436,7 +30436,7 @@ void QCPItemTracer::setPen(const QPen &pen)
 }
 
 /*!
-  Sets the pen that will be used to draw the line of the tracer when selected
+  Sets the pen that will be used to process the line of the tracer when selected
   
   \see setPen, setSelected
 */
@@ -30446,7 +30446,7 @@ void QCPItemTracer::setSelectedPen(const QPen &pen)
 }
 
 /*!
-  Sets the brush that will be used to draw any fills of the tracer
+  Sets the brush that will be used to process any fills of the tracer
   
   \see setSelectedBrush, setPen
 */
@@ -30456,7 +30456,7 @@ void QCPItemTracer::setBrush(const QBrush &brush)
 }
 
 /*!
-  Sets the brush that will be used to draw any fills of the tracer, when selected.
+  Sets the brush that will be used to process any fills of the tracer, when selected.
   
   \see setBrush, setSelected
 */
@@ -30784,7 +30784,7 @@ QCPItemBracket::~QCPItemBracket()
 }
 
 /*!
-  Sets the pen that will be used to draw the bracket.
+  Sets the pen that will be used to process the bracket.
   
   Note that when the style is \ref bsCalligraphic, only the color will be taken from the pen, the
   stroke and width are ignored. To change the apparent stroke width of a calligraphic bracket, use
@@ -30798,7 +30798,7 @@ void QCPItemBracket::setPen(const QPen &pen)
 }
 
 /*!
-  Sets the pen that will be used to draw the bracket when selected
+  Sets the pen that will be used to process the bracket when selected
   
   \see setPen, setSelected
 */
@@ -31847,7 +31847,7 @@ void QCPPolarAxisRadial::setSelectedLabelColor(const QColor &color)
 }
 
 /*!
-  Sets the pen that is used to draw the axis base line when selected.
+  Sets the pen that is used to process the axis base line when selected.
   
   \see setBasePen, setSelectableParts, setSelectedParts, QCustomPlot::setInteractions
 */
@@ -31857,7 +31857,7 @@ void QCPPolarAxisRadial::setSelectedBasePen(const QPen &pen)
 }
 
 /*!
-  Sets the pen that is used to draw the (major) ticks when selected.
+  Sets the pen that is used to process the (major) ticks when selected.
   
   \see setTickPen, setSelectableParts, setSelectedParts, QCustomPlot::setInteractions
 */
@@ -31867,7 +31867,7 @@ void QCPPolarAxisRadial::setSelectedTickPen(const QPen &pen)
 }
 
 /*!
-  Sets the pen that is used to draw the subticks when selected.
+  Sets the pen that is used to process the subticks when selected.
   
   \see setSubTickPen, setSelectableParts, setSelectedParts, QCustomPlot::setInteractions
 */
@@ -32272,7 +32272,7 @@ void QCPPolarAxisRadial::updateGeometry(const QPointF &center, double radius)
   A convenience function to easily set the QPainter::Antialiased hint on the provided \a painter
   before drawing axis lines.
 
-  This is the antialiasing state the painter passed to the \ref draw method is in by default.
+  This is the antialiasing state the painter passed to the \ref process method is in by default.
   
   This function takes into account the local setting of the antialiasing flag as well as the
   overrides set with \ref QCustomPlot::setAntialiasedElements and \ref
@@ -32299,11 +32299,11 @@ void QCPPolarAxisRadial::draw(QCPPainter *painter)
   const QPointF axisVector(qCos(axisAngleRad), qSin(axisAngleRad)); // semantically should be QCPVector2D, but we save time in loops when we keep it as QPointF
   const QPointF tickNormal = QCPVector2D(axisVector).perpendicular().toPointF(); // semantically should be QCPVector2D, but we save time in loops when we keep it as QPointF
   
-  // draw baseline:
+  // process baseline:
   painter->setPen(getBasePen());
   painter->drawLine(QLineF(mCenter, mCenter+axisVector*(mRadius-0.5)));
   
-  // draw subticks:
+  // process subticks:
   if (!mSubTickVector.isEmpty())
   {
     painter->setPen(getSubTickPen());
@@ -32314,7 +32314,7 @@ void QCPPolarAxisRadial::draw(QCPPainter *painter)
     }
   }
   
-  // draw ticks and labels:
+  // process ticks and labels:
   if (!mTickVector.isEmpty())
   {
     mLabelPainter.setAnchorReference(mCenter-axisVector); // subtract (normalized) axisVector, just to prevent degenerate tangents for tick label at exact lower axis range
@@ -32327,7 +32327,7 @@ void QCPPolarAxisRadial::draw(QCPPainter *painter)
       const double r = coordToRadius(mTickVector.at(i));
       const QPointF tickPosition = mCenter+axisVector*r;
       painter->drawLine(QLineF(tickPosition-tickNormal*mTickLengthIn, tickPosition+tickNormal*mTickLengthOut));
-      // possibly draw tick labels:
+      // possibly process tick labels:
       if (!mTickVectorLabels.isEmpty())
       {
         if ((!mRangeReversed && (i < mTickVectorLabels.count()-1 || mRadius-r > 10)) ||
@@ -32356,7 +32356,7 @@ void QCPPolarAxisRadial::setupTickVectors()
 
 /*! \internal
   
-  Returns the pen that is used to draw the axis base line. Depending on the selection state, this
+  Returns the pen that is used to process the axis base line. Depending on the selection state, this
   is either mSelectedBasePen or mBasePen.
 */
 QPen QCPPolarAxisRadial::getBasePen() const
@@ -32366,7 +32366,7 @@ QPen QCPPolarAxisRadial::getBasePen() const
 
 /*! \internal
   
-  Returns the pen that is used to draw the (major) ticks. Depending on the selection state, this
+  Returns the pen that is used to process the (major) ticks. Depending on the selection state, this
   is either mSelectedTickPen or mTickPen.
 */
 QPen QCPPolarAxisRadial::getTickPen() const
@@ -32376,7 +32376,7 @@ QPen QCPPolarAxisRadial::getTickPen() const
 
 /*! \internal
   
-  Returns the pen that is used to draw the subticks. Depending on the selection state, this
+  Returns the pen that is used to process the subticks. Depending on the selection state, this
   is either mSelectedSubTickPen or mSubTickPen.
 */
 QPen QCPPolarAxisRadial::getSubTickPen() const
@@ -32386,7 +32386,7 @@ QPen QCPPolarAxisRadial::getSubTickPen() const
 
 /*! \internal
   
-  Returns the font that is used to draw the tick labels. Depending on the selection state, this
+  Returns the font that is used to process the tick labels. Depending on the selection state, this
   is either mSelectedTickLabelFont or mTickLabelFont.
 */
 QFont QCPPolarAxisRadial::getTickLabelFont() const
@@ -32396,7 +32396,7 @@ QFont QCPPolarAxisRadial::getTickLabelFont() const
 
 /*! \internal
   
-  Returns the font that is used to draw the axis label. Depending on the selection state, this
+  Returns the font that is used to process the axis label. Depending on the selection state, this
   is either mSelectedLabelFont or mLabelFont.
 */
 QFont QCPPolarAxisRadial::getLabelFont() const
@@ -32406,7 +32406,7 @@ QFont QCPPolarAxisRadial::getLabelFont() const
 
 /*! \internal
   
-  Returns the color that is used to draw the tick labels. Depending on the selection state, this
+  Returns the color that is used to process the tick labels. Depending on the selection state, this
   is either mSelectedTickLabelColor or mTickLabelColor.
 */
 QColor QCPPolarAxisRadial::getTickLabelColor() const
@@ -32416,7 +32416,7 @@ QColor QCPPolarAxisRadial::getTickLabelColor() const
 
 /*! \internal
   
-  Returns the color that is used to draw the axis label. Depending on the selection state, this
+  Returns the color that is used to process the axis label. Depending on the selection state, this
   is either mSelectedLabelColor or mLabelColor.
 */
 QColor QCPPolarAxisRadial::getLabelColor() const
@@ -33025,11 +33025,11 @@ void QCPPolarAxisAngular::draw(QCPPainter *painter)
 {
   drawBackground(painter, mCenter, mRadius);
   
-  // draw baseline circle:
+  // process baseline circle:
   painter->setPen(getBasePen());
   painter->drawEllipse(mCenter, mRadius, mRadius);
   
-  // draw subticks:
+  // process subticks:
   if (!mSubTickVector.isEmpty())
   {
     painter->setPen(getSubTickPen());
@@ -33040,7 +33040,7 @@ void QCPPolarAxisAngular::draw(QCPPainter *painter)
     }
   }
   
-  // draw ticks and labels:
+  // process ticks and labels:
   if (!mTickVector.isEmpty())
   {
     mLabelPainter.setAnchorReference(mCenter);
@@ -33052,7 +33052,7 @@ void QCPPolarAxisAngular::draw(QCPPainter *painter)
     {
       const QPointF outerTick = mCenter+mTickVectorCosSin.at(i)*(mRadius+mTickLengthOut);
       painter->drawLine(mCenter+mTickVectorCosSin.at(i)*(mRadius-mTickLengthIn), outerTick);
-      // draw tick labels:
+      // process tick labels:
       if (!mTickVectorLabels.isEmpty())
       {
         if (i < mTickVectorLabels.count()-1 || (mTickVectorCosSin.at(i)-mTickVectorCosSin.first()).manhattanLength() > 5/180.0*M_PI) // skip last label if it's closer than approx 5 degrees to first
@@ -33761,7 +33761,7 @@ void QCPPolarAxisAngular::setSelectedLabelColor(const QColor &color)
 }
 
 /*!
-  Sets the pen that is used to draw the axis base line when selected.
+  Sets the pen that is used to process the axis base line when selected.
   
   \see setBasePen, setSelectableParts, setSelectedParts, QCustomPlot::setInteractions
 */
@@ -33771,7 +33771,7 @@ void QCPPolarAxisAngular::setSelectedBasePen(const QPen &pen)
 }
 
 /*!
-  Sets the pen that is used to draw the (major) ticks when selected.
+  Sets the pen that is used to process the (major) ticks when selected.
   
   \see setTickPen, setSelectableParts, setSelectedParts, QCustomPlot::setInteractions
 */
@@ -33781,7 +33781,7 @@ void QCPPolarAxisAngular::setSelectedTickPen(const QPen &pen)
 }
 
 /*!
-  Sets the pen that is used to draw the subticks when selected.
+  Sets the pen that is used to process the subticks when selected.
   
   \see setSubTickPen, setSelectableParts, setSelectedParts, QCustomPlot::setInteractions
 */
@@ -33810,7 +33810,7 @@ void QCPPolarAxisAngular::setSelectedSubTickPen(const QPen &pen)
 */
 void QCPPolarAxisAngular::drawBackground(QCPPainter *painter, const QPointF &center, double radius)
 {
-  // draw background fill (don't use circular clip, looks bad):
+  // process background fill (don't use circular clip, looks bad):
   if (mBackgroundBrush != Qt::NoBrush)
   {
     QPainterPath ellipsePath;
@@ -33818,7 +33818,7 @@ void QCPPolarAxisAngular::drawBackground(QCPPainter *painter, const QPointF &cen
     painter->fillPath(ellipsePath, mBackgroundBrush);
   }
   
-  // draw background pixmap (on top of fill, if brush specified):
+  // process background pixmap (on top of fill, if brush specified):
   if (!mBackgroundPixmap.isNull())
   {
     QRegion clipCircle(center.x()-radius, center.y()-radius, qRound(2*radius), qRound(2*radius), QRegion::Ellipse);
@@ -33856,7 +33856,7 @@ void QCPPolarAxisAngular::setupTickVectors()
   mSubTickVector.clear(); // since we might not pass it to mTicker->generate(), and we don't want old data in there
   mTicker->generate(mRange, mParentPlot->locale(), mNumberFormatChar, mNumberPrecision, mTickVector, mSubTicks ? &mSubTickVector : 0, mTickLabels ? &mTickVectorLabels : 0);
   
-  // fill cos/sin buffers which will be used by draw() and QCPPolarGrid::draw(), so we don't have to calculate it twice:
+  // fill cos/sin buffers which will be used by process() and QCPPolarGrid::process(), so we don't have to calculate it twice:
   mTickVectorCosSin.resize(mTickVector.size());
   for (int i=0; i<mTickVector.size(); ++i)
   {
@@ -33873,7 +33873,7 @@ void QCPPolarAxisAngular::setupTickVectors()
 
 /*! \internal
   
-  Returns the pen that is used to draw the axis base line. Depending on the selection state, this
+  Returns the pen that is used to process the axis base line. Depending on the selection state, this
   is either mSelectedBasePen or mBasePen.
 */
 QPen QCPPolarAxisAngular::getBasePen() const
@@ -33883,7 +33883,7 @@ QPen QCPPolarAxisAngular::getBasePen() const
 
 /*! \internal
   
-  Returns the pen that is used to draw the (major) ticks. Depending on the selection state, this
+  Returns the pen that is used to process the (major) ticks. Depending on the selection state, this
   is either mSelectedTickPen or mTickPen.
 */
 QPen QCPPolarAxisAngular::getTickPen() const
@@ -33893,7 +33893,7 @@ QPen QCPPolarAxisAngular::getTickPen() const
 
 /*! \internal
   
-  Returns the pen that is used to draw the subticks. Depending on the selection state, this
+  Returns the pen that is used to process the subticks. Depending on the selection state, this
   is either mSelectedSubTickPen or mSubTickPen.
 */
 QPen QCPPolarAxisAngular::getSubTickPen() const
@@ -33903,7 +33903,7 @@ QPen QCPPolarAxisAngular::getSubTickPen() const
 
 /*! \internal
   
-  Returns the font that is used to draw the tick labels. Depending on the selection state, this
+  Returns the font that is used to process the tick labels. Depending on the selection state, this
   is either mSelectedTickLabelFont or mTickLabelFont.
 */
 QFont QCPPolarAxisAngular::getTickLabelFont() const
@@ -33913,7 +33913,7 @@ QFont QCPPolarAxisAngular::getTickLabelFont() const
 
 /*! \internal
   
-  Returns the font that is used to draw the axis label. Depending on the selection state, this
+  Returns the font that is used to process the axis label. Depending on the selection state, this
   is either mSelectedLabelFont or mLabelFont.
 */
 QFont QCPPolarAxisAngular::getLabelFont() const
@@ -33923,7 +33923,7 @@ QFont QCPPolarAxisAngular::getLabelFont() const
 
 /*! \internal
   
-  Returns the color that is used to draw the tick labels. Depending on the selection state, this
+  Returns the color that is used to process the tick labels. Depending on the selection state, this
   is either mSelectedTickLabelColor or mTickLabelColor.
 */
 QColor QCPPolarAxisAngular::getTickLabelColor() const
@@ -33933,7 +33933,7 @@ QColor QCPPolarAxisAngular::getTickLabelColor() const
 
 /*! \internal
   
-  Returns the color that is used to draw the axis label. Depending on the selection state, this
+  Returns the color that is used to process the axis label. Depending on the selection state, this
   is either mSelectedLabelColor or mLabelColor.
 */
 QColor QCPPolarAxisAngular::getLabelColor() const
@@ -34234,7 +34234,7 @@ void QCPPolarGrid::setRadialZeroLinePen(const QPen &pen)
   A convenience function to easily set the QPainter::Antialiased hint on the provided \a painter
   before drawing the major grid lines.
 
-  This is the antialiasing state the painter passed to the \ref draw method is in by default.
+  This is the antialiasing state the painter passed to the \ref process method is in by default.
   
   This function takes into account the local setting of the antialiasing flag as well as the
   overrides set with \ref QCustomPlot::setAntialiasedElements and \ref
@@ -34260,18 +34260,18 @@ void QCPPolarGrid::draw(QCPPainter *painter)
   const double radius = mParentAxis->mRadius;
   
   painter->setBrush(Qt::NoBrush);
-  // draw main angular grid:
+  // process main angular grid:
   if (mType.testFlag(gtAngular))
     drawAngularGrid(painter, center, radius, mParentAxis->mTickVectorCosSin, mAngularPen);
-  // draw main radial grid:
+  // process main radial grid:
   if (mType.testFlag(gtRadial) && mRadialAxis)
     drawRadialGrid(painter, center, mRadialAxis->tickVector(), mRadialPen, mRadialZeroLinePen);
   
   applyAntialiasingHint(painter, mAntialiasedSubGrid, QCP::aeGrid);
-  // draw sub angular grid:
+  // process sub angular grid:
   if (mSubGridType.testFlag(gtAngular))
     drawAngularGrid(painter, center, radius, mParentAxis->mSubTickVectorCosSin, mAngularSubGridPen);
-  // draw sub radial grid:
+  // process sub radial grid:
   if (mSubGridType.testFlag(gtRadial) && mRadialAxis)
     drawRadialGrid(painter, center, mRadialAxis->subTickVector(), mRadialSubGridPen);
 }
@@ -34343,12 +34343,12 @@ void QCPPolarLegendItem::draw(QCPPainter *painter)
   QRectF iconRect(mRect.topLeft(), iconSize);
   int textHeight = qMax(textRect.height(), iconSize.height());  // if text has smaller height than icon, center text vertically in icon height, else align tops
   painter->drawText(mRect.x()+iconSize.width()+mParentLegend->iconTextPadding(), mRect.y(), textRect.width(), textHeight, Qt::TextDontClip, mPolarGraph->name());
-  // draw icon:
+  // process icon:
   painter->save();
   painter->setClipRect(iconRect, Qt::IntersectClip);
   mPolarGraph->drawLegendIcon(painter, iconRect);
   painter->restore();
-  // draw icon border:
+  // process icon border:
   if (getIconBorderPen().style() != Qt::NoPen)
   {
     painter->setPen(getIconBorderPen());
@@ -34489,7 +34489,7 @@ void QCPPolarGraph::setAntialiasedScatters(bool enabled)
 }
 
 /*!
-  The pen is used to draw basic lines that make up the plottable representation in the
+  The pen is used to process basic lines that make up the plottable representation in the
   plot.
   
   For example, the \ref QCPGraph subclass draws its graph lines with this pen.
@@ -34502,7 +34502,7 @@ void QCPPolarGraph::setPen(const QPen &pen)
 }
 
 /*!
-  The brush is used to draw basic fills of the plottable representation in the
+  The brush is used to process basic fills of the plottable representation in the
   plot. The Fill can be a color, gradient or texture, see the usage of QBrush.
   
   For example, the \ref QCPGraph subclass draws the fill under the graph with this brush, when
@@ -34942,7 +34942,7 @@ void QCPPolarGraph::draw(QCPPainter *painter)
   
   QVector<QPointF> lines, scatters; // line and (if necessary) scatter pixel coordinates will be stored here while iterating over segments
   
-  // loop over and draw segments of unselected/selected data:
+  // loop over and process segments of unselected/selected data:
   QList<QCPDataRange> selectedSegments, unselectedSegments, allSegments;
   getDataSegments(selectedSegments, unselectedSegments);
   allSegments << unselectedSegments << selectedSegments;
@@ -34963,7 +34963,7 @@ void QCPPolarGraph::draw(QCPPainter *painter)
     }
 #endif
     
-    // draw fill of graph:
+    // process fill of graph:
     //if (isSelectedSegment && mSelectionDecorator)
     //  mSelectionDecorator->applyBrush(painter);
     //else
@@ -34972,7 +34972,7 @@ void QCPPolarGraph::draw(QCPPainter *painter)
     drawFill(painter, &lines);
     
     
-    // draw line:
+    // process line:
     if (mLineStyle != lsNone)
     {
       //if (isSelectedSegment && mSelectionDecorator)
@@ -34983,7 +34983,7 @@ void QCPPolarGraph::draw(QCPPainter *painter)
       drawLinePlot(painter, lines);
     }
     
-    // draw scatters:
+    // process scatters:
     
     QCPScatterStyle finalScatterStyle = mScatterStyle;
     //if (isSelectedSegment && mSelectionDecorator)
@@ -34995,7 +34995,7 @@ void QCPPolarGraph::draw(QCPPainter *painter)
     }
   }
   
-  // draw other selection decoration that isn't just line/scatter pens and brushes:
+  // process other selection decoration that isn't just line/scatter pens and brushes:
   //if (mSelectionDecorator)
   //  mSelectionDecorator->drawDecoration(painter, selection());
 }
@@ -35109,20 +35109,20 @@ void QCPPolarGraph::drawScatterPlot(QCPPainter *painter, const QVector<QPointF> 
 
 void QCPPolarGraph::drawLegendIcon(QCPPainter *painter, const QRectF &rect) const
 {
-  // draw fill:
+  // process fill:
   if (mBrush.style() != Qt::NoBrush)
   {
     applyFillAntialiasingHint(painter);
     painter->fillRect(QRectF(rect.left(), rect.top()+rect.height()/2.0, rect.width(), rect.height()/3.0), mBrush);
   }
-  // draw line vertically centered:
+  // process line vertically centered:
   if (mLineStyle != lsNone)
   {
     applyDefaultAntialiasingHint(painter);
     painter->setPen(mPen);
     painter->drawLine(QLineF(rect.left(), rect.top()+rect.height()/2.0, rect.right()+5, rect.top()+rect.height()/2.0)); // +5 on x2 else last segment is missing from dashed/dotted pens
   }
-  // draw scatter symbol:
+  // process scatter symbol:
   if (!mScatterStyle.isNone())
   {
     applyScattersAntialiasingHint(painter);
@@ -35262,7 +35262,7 @@ void QCPPolarGraph::drawPolyline(QCPPainter *painter, const QVector<QPointF> &li
       }
       ++i;
     }
-    // draw last segment:
+    // process last segment:
     painter->drawPolyline(lineData.constData()+segmentStart, lineDataSize-segmentStart);
   }
 }
@@ -35300,7 +35300,7 @@ void QCPPolarGraph::getVisibleDataBounds(QCPGraphDataContainer::const_iterator &
   according to the line style of the graph.
 
   \a lines will be filled with points in pixel coordinates, that can be drawn with the according
-  draw functions like \ref drawLinePlot and \ref drawImpulsePlot. The points returned in \a lines
+  process functions like \ref drawLinePlot and \ref drawImpulsePlot. The points returned in \a lines
   aren't necessarily the original data points. For example, step line styles require additional
   points to form the steps when drawn. If the line style of the graph is \ref lsNone, the \a
   lines vector will be empty.
@@ -35381,7 +35381,7 @@ void QCPPolarGraph::getOptimizedLineData(QVector<QCPGraphData> *lineData, const 
   {
     if (it->value < lowerClipValue)
     {
-      if (aboveRange) // jumped directly from above to below visible range, draw previous point so entry angle is correct
+      if (aboveRange) // jumped directly from above to below visible range, process previous point so entry angle is correct
       {
         aboveRange = false;
         if (!reversed) // TODO: with inner radius, we'll need else case here with projected border point
@@ -35400,7 +35400,7 @@ void QCPPolarGraph::getOptimizedLineData(QVector<QCPGraphData> *lineData, const 
       }
     } else if (it->value > upperClipValue)
     {
-      if (belowRange) // jumped directly from below to above visible range, draw previous point so entry angle is correct (if lower means outer, so if reversed axis)
+      if (belowRange) // jumped directly from below to above visible range, process previous point so entry angle is correct (if lower means outer, so if reversed axis)
       {
         belowRange = false;
         if (reversed)
@@ -35423,13 +35423,13 @@ void QCPPolarGraph::getOptimizedLineData(QVector<QCPGraphData> *lineData, const 
       {
         aboveRange = false;
         if (!reversed)
-          lineData->append(*(it-1)); // just entered from above, draw previous point so entry angle is correct (if above means outer, so if not reversed axis)
+          lineData->append(*(it-1)); // just entered from above, process previous point so entry angle is correct (if above means outer, so if not reversed axis)
       }
       if (belowRange)
       {
         belowRange = false;
         if (reversed)
-          lineData->append(*(it-1)); // just entered from below, draw previous point so entry angle is correct (if below means outer, so if reversed axis)
+          lineData->append(*(it-1)); // just entered from below, process previous point so entry angle is correct (if below means outer, so if reversed axis)
       }
       lineData->append(*it); // inside visible circle, add point normally
     }
@@ -35440,13 +35440,13 @@ void QCPPolarGraph::getOptimizedLineData(QVector<QCPGraphData> *lineData, const 
   {
     aboveRange = false;
     if (!reversed)
-      lineData->append(*(it-1)); // just entered from above, draw previous point so entry angle is correct (if above means outer, so if not reversed axis)
+      lineData->append(*(it-1)); // just entered from above, process previous point so entry angle is correct (if above means outer, so if not reversed axis)
   }
   if (belowRange)
   {
     belowRange = false;
     if (reversed)
-      lineData->append(*(it-1)); // just entered from below, draw previous point so entry angle is correct (if below means outer, so if reversed axis)
+      lineData->append(*(it-1)); // just entered from below, process previous point so entry angle is correct (if below means outer, so if reversed axis)
   }
 }
 

@@ -17,7 +17,7 @@ main_widget::main_widget(QWidget *parent) :
     /* set time */
     ui->dateTimeEdit->setDateTime(QDateTime::currentDateTime());
     ui->dockWidget->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-    /* draw plot setup */
+    /* process plot setup */
 
     this->_time->setInterval(1000);
     this->_time->start();
@@ -130,7 +130,7 @@ void main_widget::comboBox_init() {
 }
 
 /**
- * Spectrum draw plot setup
+ * Spectrum process plot setup
  * */
 void main_widget::spectrum_draw_init() {
     QPen pen = ui->spectrum_plot->xAxis->basePen();

@@ -65,5 +65,4 @@ void get_window_coefficient(float *coefficient,int size,int window_type){
             coefficient[i] = 1;
         }
     }
-
 }

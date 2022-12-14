@@ -8,7 +8,7 @@
 #include <QWidget>
 #include "ui_main_widget.h"
 #include "fix/dataBuffer.h"
-#include "draw/draw.h"
+#include "process/spectrumProcrss.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class main_widget; }

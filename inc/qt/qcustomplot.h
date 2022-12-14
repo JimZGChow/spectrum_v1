@@ -600,7 +600,7 @@ public:
   
   // reimplemented virtual methods:
   virtual QCPPainter *startPainting() Q_DECL_OVERRIDE;
-  virtual void draw(QCPPainter *painter) const Q_DECL_OVERRIDE;
+  virtual void process(QCPPainter *painter) const Q_DECL_OVERRIDE;
   void clear(const QColor &color) Q_DECL_OVERRIDE;
   
 protected:
@@ -624,7 +624,7 @@ public:
   // reimplemented virtual methods:
   virtual QCPPainter *startPainting() Q_DECL_OVERRIDE;
   virtual void donePainting() Q_DECL_OVERRIDE;
-  virtual void draw(QCPPainter *painter) const Q_DECL_OVERRIDE;
+  virtual void process(QCPPainter *painter) const Q_DECL_OVERRIDE;
   void clear(const QColor &color) Q_DECL_OVERRIDE;
   
 protected:
@@ -2485,7 +2485,7 @@ public:
   /*!
     Defines the shape used for scatter points.
 
-    On plottables/items that draw scatters, the sizes of these visualizations (with exception of
+    On plottables/items that process scatters, the sizes of these visualizations (with exception of
     \ref ssDot and \ref ssPixmap) can be controlled with the \ref setSize function. Scatters are
     drawn with the pen and brush specified with \ref setPen and \ref setBrush.
   */
@@ -4337,8 +4337,8 @@ private:
   subclassed plottables don't need to worry about this anymore.
 
   Further, it provides a convenience method for retrieving selected/unselected data segments via
-  \ref getDataSegments. This is useful when subclasses implement their \ref draw method and need to
-  draw selected segments with a different pen/brush than unselected segments (also see \ref
+  \ref getDataSegments. This is useful when subclasses implement their \ref process method and need to
+  process selected segments with a different pen/brush than unselected segments (also see \ref
   QCPSelectionDecorator).
 
   This class implements basic functionality of \ref QCPAbstractPlottable::selectTest and \ref
@@ -4611,7 +4611,7 @@ double QCPAbstractPlottable1D<DataType>::selectTest(const QPointF &pos, bool onl
   Splits all data into selected and unselected segments and outputs them via \a selectedSegments
   and \a unselectedSegments, respectively.
 
-  This is useful when subclasses implement their \ref draw method and need to draw selected
+  This is useful when subclasses implement their \ref process method and need to process selected
   segments with a different pen/brush than unselected segments (also see \ref
   QCPSelectionDecorator).
 
@@ -4700,7 +4700,7 @@ void QCPAbstractPlottable1D<DataType>::drawPolyline(QCPPainter *painter, const Q
       }
       ++i;
     }
-    // draw last segment:
+    // process last segment:
     painter->drawPolyline(lineData.constData()+segmentStart, lineDataSize-segmentStart);
   }
 }

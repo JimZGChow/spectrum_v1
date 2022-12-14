@@ -22,11 +22,11 @@ add_executable(spectrum main.cpp src/qt/main_widget.cpp
         src/qt/qcustomplot.cpp  src/fix/fftw.cpp
         inc/qt/main_widget.h inc/qt/main_widget.ui
         inc/fix/my_math.h inc/qt/qcustomplot.h
-        inc/draw/draw.h inc/fix/dataBuffer.h
-        inc/fix/fftw_common.h src/draw/draw.cpp
+        inc/process/spectrumProcrss.h inc/fix/dataBuffer.h
+        inc/fix/fftw_common.h src/process/spectrumProcess.cpp
         inc/fix/source_creator.h src/fix/source_creator.cpp
         inc/device/sdrDevice.h inc/fix/log.h src/device/sdrDevice.cpp
-        src/fix/log.cpp src/fix/my_math.cpp)
+        src/fix/log.cpp src/fix/my_math.cpp inc/fix/iqSave.h src/fix/iqSave.cpp)
 
 target_link_libraries(spectrum
         Qt5::Core

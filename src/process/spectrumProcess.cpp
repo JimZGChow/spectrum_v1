@@ -1,7 +1,7 @@
 //
 // Created by jcc on 22-12-1.
 //
-#include "draw/draw.h"
+#include "process/spectrumProcrss.h"
 
 #define DATABUFF_SIZE 30*1024
 #define MAXWATER_FALL_SIZE 50
@@ -99,8 +99,10 @@ void spectrumProcess::clicked_status(bool is_on) {
 }
 
 /* set window */
+bool is_change = 1;
 void spectrumProcess::get_rx_data(mp::sdr_transfer *transfer) {
     auto *obj = (spectrumProcess *)transfer->user;
+    obj->_iq_save.save_iq_data(transfer->data,transfer->length);
     try {
         for(int i = 0;i < transfer->length;i++){
             obj->_iq_data[i][0] = transfer->data[2*i] * obj->_window_coefficient[i];
@@ -109,6 +111,15 @@ void spectrumProcess::get_rx_data(mp::sdr_transfer *transfer) {
         auto load_size = obj->_buffer_data->put_data_into_buffer(obj->_iq_data,2 * transfer->length);
         if(load_size == transfer->length * 2){
             emit obj->buffer_data_load();
+            if(is_change){
+//                obj->_device->sdr_set_lo_frequency(90.1e6);
+                is_change = 0;
+            }
+            else{
+//                obj->_device->sdr_set_lo_frequency(100.1e6);
+                is_change = 1;
+
+            }
         }
     }
     catch (...){
@@ -249,7 +260,6 @@ void SpectrumScope::set_sdr_info(double fs, double frequency, double bandwidth) 
     this->_fs = fs;
     this->_freq = frequency;
     this->_bandwidth = bandwidth;
-
 }
 
 void SpectrumScope::set_fft_size(int fft_size) {
@@ -280,7 +290,7 @@ void SpectrumScope::draw_main_scope() {
 }
 
 void SpectrumScope::draw_1M_scope() {
-/* just draw 1M */
+/* just process 1M */
     double step = _fs / 1024;
     int draw_number = (int)(1e6 / step);
     draw_number = (draw_number % 2 == 1) ?  draw_number + 1 : draw_number;
